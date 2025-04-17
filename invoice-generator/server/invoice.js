@@ -100,24 +100,63 @@ async function generateInvoice(data) {
 
       // Bill Attachments on separate pages
       if (data.bills && Array.isArray(data.bills) && data.bills.length > 0) {
+        console.log('Processing bills for attachments, count:', data.bills.length);
+        
         for (const bill of data.bills) {
-          doc.addPage();
-          doc.fontSize(16).font('Helvetica-Bold').text('Bill Attachment', { align: 'center' });
-          doc.moveDown(2);
           if (bill.fileUrl) {
+            console.log('Processing bill with fileUrl:', bill.fileUrl);
+            
             try {
-              // Check if file exists before trying to add it
-              if (fs.existsSync(bill.fileUrl)) {
-                doc.image(bill.fileUrl, {
-                  fit: [500, 650],
-                  align: 'center'
-                });
+              doc.addPage();
+              doc.fontSize(16).font('Helvetica-Bold').text('Bill Attachment', { align: 'center' });
+              doc.moveDown();
+              doc.fontSize(12).font('Helvetica');
+              doc.text(`Bill No: ${bill.billNo || 'N/A'}`, { align: 'center' });
+              doc.text(`Amount: ₹${Number(bill.amount || 0).toLocaleString('en-IN')}`, { align: 'center' });
+              doc.moveDown(2);
+              
+              // Attempt to load the image using multiple path formats
+              let imagePath = bill.fileUrl;
+              const possiblePaths = [
+                bill.fileUrl,  // Original path
+                path.join(__dirname, bill.fileUrl),  // Relative to script
+                path.join(__dirname, '..', bill.fileUrl),  // Relative to server root
+                path.isAbsolute(bill.fileUrl) ? bill.fileUrl : path.join(process.cwd(), bill.fileUrl), // Absolute or relative to CWD
+                path.join(__dirname, '..', 'uploads', path.basename(bill.fileUrl)) // In uploads folder
+              ];
+              
+              console.log('Attempting to find image at these locations:');
+              let imageFound = false;
+              
+              for (const testPath of possiblePaths) {
+                console.log('Checking path:', testPath);
+                if (fs.existsSync(testPath)) {
+                  console.log('Image found at:', testPath);
+                  imagePath = testPath;
+                  imageFound = true;
+                  break;
+                }
+              }
+              
+              if (imageFound) {
+                try {
+                  console.log('Adding image to PDF from:', imagePath);
+                  doc.image(imagePath, {
+                    fit: [500, 650],
+                    align: 'center'
+                  });
+                  console.log('Image added successfully');
+                } catch (imgError) {
+                  console.error('Error adding image to PDF:', imgError);
+                  doc.text(`Error loading bill image: ${imgError.message}`, { align: 'center' });
+                }
               } else {
-                doc.text('Bill file not found', { align: 'center' });
+                console.error('Bill file not found at any of the attempted paths');
+                doc.text('Bill file not found. Please check the file path.', { align: 'center' });
               }
             } catch (error) {
-              console.error('Error adding bill image:', error);
-              doc.text('Error loading bill image', { align: 'center' });
+              console.error('Error processing bill attachment:', error);
+              doc.text('Error processing bill attachment: ' + error.message, { align: 'center' });
             }
           }
         }
