@@ -1,0 +1,223 @@
+.card {
+  background-color: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  will-change: transform, box-shadow;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Padding options */
+.padding-small {
+  padding: var(--spacing-4);
+}
+
+.padding-medium {
+  padding: var(--spacing-6);
+}
+
+.padding-large {
+  padding: var(--spacing-8);
+}
+
+/* Shadow options with refined depths */
+.shadow-none {
+  box-shadow: none;
+}
+
+.shadow-small {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.shadow-medium {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-large {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Border option with improved contrast */
+.bordered {
+  border: 1px solid var(--gray-200);
+  background-image: linear-gradient(to bottom, white, var(--gray-50));
+}
+
+/* Enhanced hover effect */
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Improved card header */
+.header {
+  padding: var(--spacing-4) var(--spacing-6);
+  border-bottom: 1px solid var(--gray-200);
+  background-image: linear-gradient(to bottom, white, var(--gray-50));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header h2, .header h3, .header h4 {
+  margin: 0;
+  color: var(--gray-900);
+  font-weight: var(--font-semibold);
+  letter-spacing: -0.025em;
+}
+
+/* Enhanced card body */
+.body {
+  padding: var(--spacing-6);
+  position: relative;
+}
+
+.body:not(:last-child) {
+  border-bottom: 1px solid var(--gray-100);
+}
+
+/* Improved card footer */
+.footer {
+  padding: var(--spacing-4) var(--spacing-6);
+  border-top: 1px solid var(--gray-200);
+  background-image: linear-gradient(to bottom, var(--gray-50), white);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-4);
+}
+
+/* Enhanced card variants with gradients */
+.primary {
+  border-top: 4px solid var(--primary-500);
+  background-image: linear-gradient(to bottom right, var(--primary-50), white 50%);
+}
+
+.secondary {
+  border-top: 4px solid var(--secondary-500);
+  background-image: linear-gradient(to bottom right, var(--secondary-50), white 50%);
+}
+
+.success {
+  border-top: 4px solid var(--success-500);
+  background-image: linear-gradient(to bottom right, var(--success-50), white 50%);
+}
+
+.danger {
+  border-top: 4px solid var(--danger-500);
+  background-image: linear-gradient(to bottom right, var(--danger-50), white 50%);
+}
+
+.warning {
+  border-top: 4px solid var(--warning-500);
+  background-image: linear-gradient(to bottom right, var(--warning-50), white 50%);
+}
+
+.info {
+  border-top: 4px solid var(--info-500);
+  background-image: linear-gradient(to bottom right, var(--info-50), white 50%);
+}
+
+/* Enhanced card with image */
+.withImage {
+  display: flex;
+  flex-direction: column;
+}
+
+.imageContainer {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+}
+
+.imageContainer::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.1), transparent);
+  pointer-events: none;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.withImage:hover .image {
+  transform: scale(1.05) rotate(1deg);
+}
+
+/* Loading state */
+.loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--gray-100),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .card {
+    border-radius: var(--radius-md);
+  }
+
+  .padding-large {
+    padding: var(--spacing-6);
+  }
+  
+  .padding-medium {
+    padding: var(--spacing-4);
+  }
+  
+  .padding-small {
+    padding: var(--spacing-3);
+  }
+  
+  .header, .footer {
+    padding: var(--spacing-3) var(--spacing-4);
+  }
+  
+  .body {
+    padding: var(--spacing-4);
+  }
+
+  .imageContainer {
+    height: 160px;
+  }
+} 

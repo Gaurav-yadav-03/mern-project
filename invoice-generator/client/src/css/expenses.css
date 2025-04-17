@@ -1,0 +1,458 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary-color: #1a73e8;
+  --secondary-color: #4285f4;
+  --accent-color: #34a853;
+  --danger-color: #ea4335;
+  --text-color: #333;
+  --text-light: #666;
+  --border-color: #ddd;
+  --background-color: #f9f9f9;
+  --card-background: #fff;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --border-radius: 8px;
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+  background-color: var(--card-background);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+}
+
+/* Header Styles */
+.header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-xs);
+}
+
+.subtitle {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--text-light);
+}
+
+/* Basic Info Styles */
+.basic-info {
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-md);
+  background-color: var(--background-color);
+  border-radius: var(--border-radius);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-item label {
+  font-weight: 500;
+  color: var(--text-light);
+  margin-bottom: var(--spacing-xs);
+}
+
+.info-item span {
+  font-weight: 400;
+}
+
+.info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Form Styles */
+.expense-form, .da-form {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--background-color);
+  border-radius: var(--border-radius);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-weight: 500;
+  margin-bottom: var(--spacing-xs);
+  color: var(--text-light);
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* Button Styles */
+.add-btn, .save-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 1rem;
+}
+
+.add-btn:hover, .save-btn:hover {
+  background-color: var(--secondary-color);
+}
+
+.save-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--spacing-lg);
+  padding: 1rem;
+  font-size: 1.1rem;
+}
+
+.delete-btn {
+  background-color: var(--danger-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 0.9rem;
+}
+
+.delete-btn:hover {
+  background-color: #d32f2f;
+}
+
+/* Expense List Styles */
+.expense-list {
+  margin-top: var(--spacing-lg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.expense-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 0.5fr;
+  padding: var(--spacing-sm);
+  background-color: var(--background-color);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.expense-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 0.5fr;
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-color);
+  align-items: center;
+}
+
+.expense-item:last-child {
+  border-bottom: none;
+}
+
+/* Hotel Section Styles */
+.hotel-section {
+  margin: var(--spacing-lg) 0;
+  padding: var(--spacing-md);
+  background-color: var(--background-color);
+  border-radius: var(--border-radius);
+}
+
+.hotel-amount {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+  background-color: var(--card-background);
+  border-radius: var(--border-radius);
+  margin-top: var(--spacing-sm);
+}
+
+/* DA Section Styles */
+.da-section {
+  margin: var(--spacing-lg) 0;
+  padding: var(--spacing-md);
+  background-color: var(--background-color);
+  border-radius: var(--border-radius);
+}
+
+.da-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+}
+
+/* Total Section Styles */
+.total-section {
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-md);
+  background-color: var(--background-color);
+  border-radius: var(--border-radius);
+}
+
+.total-item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.total-item:last-child {
+  border-bottom: none;
+}
+
+.grand-total {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--primary-color);
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 2px solid var(--border-color);
+}
+
+/* Section Headers */
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Convenience Section Styles */
+.convenience-section {
+  margin: var(--spacing-lg) 0;
+  padding: var(--spacing-md);
+  background-color: var(--background-color);
+  border-radius: var(--border-radius);
+}
+
+/* Table Styles */
+.expense-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--spacing-md);
+  background-color: var(--card-background);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.expense-table th,
+.expense-table td {
+  padding: var(--spacing-sm);
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.expense-table th {
+  background-color: var(--background-color);
+  font-weight: 500;
+  color: var(--text-light);
+}
+
+.expense-table tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.expense-table tfoot tr {
+  font-weight: 500;
+}
+
+.total-label {
+  text-align: right;
+}
+
+.total-amount {
+  font-weight: 600;
+}
+
+/* Summary Section Styles */
+.summary-section {
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-md);
+  background-color: var(--background-color);
+  border-radius: var(--border-radius);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-sm);
+  background-color: var(--card-background);
+  border-radius: var(--border-radius);
+}
+
+.summary-item.grand-total {
+  grid-column: 1 / -1;
+  font-weight: 600;
+  font-size: 1.1rem;
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Button Styles */
+.add-button, .submit-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 1rem;
+}
+
+.add-button:hover, .submit-button:hover {
+  background-color: var(--secondary-color);
+}
+
+.delete-button {
+  background-color: var(--danger-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 0.9rem;
+}
+
+.delete-button:hover {
+  background-color: #d32f2f;
+}
+
+.submit-button {
+  display: block;
+  width: 100%;
+  margin-top: var(--spacing-lg);
+  padding: 1rem;
+  font-size: 1.1rem;
+}
+
+/* Actions Section */
+.actions {
+  margin-top: var(--spacing-xl);
+}
+
+/* Section Headers */
+h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding: var(--spacing-md);
+  }
+
+  .info-grid,
+  .form-grid,
+  .da-form {
+    grid-template-columns: 1fr;
+  }
+
+  .expense-header,
+  .expense-item {
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 0.5fr;
+    font-size: 0.9rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .subtitle {
+    font-size: 1.2rem;
+  }
+
+  .expense-table {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .expense-header,
+  .expense-item {
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 0.5fr;
+    font-size: 0.8rem;
+  }
+
+  .add-btn, .save-btn, .delete-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+  }
+} 

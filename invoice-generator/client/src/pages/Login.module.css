@@ -1,0 +1,171 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 20px;
+}
+
+.formContainer {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 450px;
+}
+
+.formContainer h1 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+  font-size: 32px;
+  text-align: center;
+}
+
+.formContainer p {
+  color: #7f8c8d;
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.googleButton {
+  margin: 20px 0;
+}
+
+.googleButton button {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.googleButton button:hover {
+  background: #f5f5f5;
+  border-color: #d0d0d0;
+}
+
+.googleIcon {
+  width: 24px;
+  height: 24px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 30px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.divider span {
+  padding: 0 10px;
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputGroup label {
+  color: #34495e;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.inputGroup input {
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.inputGroup input:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.submitButton {
+  background: #3498db;
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 10px;
+}
+
+.submitButton:hover {
+  background: #2980b9;
+}
+
+.submitButton:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
+
+.error {
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.switchMode {
+  margin-top: 25px;
+  text-align: center;
+  color: #7f8c8d;
+}
+
+.switchButton {
+  background: none;
+  border: none;
+  color: #3498db;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 5px;
+  font-size: inherit;
+}
+
+.switchButton:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .formContainer {
+    padding: 25px;
+  }
+  
+  .formContainer h1 {
+    font-size: 24px;
+  }
+}

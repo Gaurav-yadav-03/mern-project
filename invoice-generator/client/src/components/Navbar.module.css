@@ -1,0 +1,194 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  height: 70px;
+}
+
+.logo {
+  color: #1a237e;
+  text-decoration: none;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.logo a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.navLinks {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.navLink {
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.navLink:hover {
+  background-color: #f5f5f5;
+  color: #1a237e;
+}
+
+.navLink.active {
+  color: #1a237e;
+  background-color: #e8eaf6;
+}
+
+.navRight {
+  position: relative;
+}
+
+/* Update navLinks to accommodate profile section */
+.navLinks {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+/* Update profile section styles */
+.profileSection {
+  position: relative;
+  margin-left: 1rem;
+}
+
+.profileCircle {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.profileCircle img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profileCircle span {
+  color: #1a237e;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.profileDropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 220px;
+  z-index: 1000;
+}
+
+.userInfo {
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px 8px 0 0;
+}
+
+.userName {
+  display: block;
+  font-weight: 600;
+  color: #1a237e;
+  font-size: 1rem;
+}
+
+.userEmail {
+  display: block;
+  font-size: 0.875rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background-color: #eee;
+  margin: 0;
+}
+
+.dropdownItem {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: #333;
+  text-decoration: none;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.dropdownItem:hover {
+  background-color: #f5f5f5;
+}
+
+/* Update media query to handle profile section */
+@media (max-width: 768px) {
+  .profileSection {
+    margin: 0;
+  }
+
+  .profileDropdown {
+    position: static;
+    margin-top: 1rem;
+    width: 100%;
+    box-shadow: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Add this at the bottom of the file */
+:global(.App) {
+  padding-top: 70px;
+}
+
+@media (max-width: 768px) {
+  .navLinks {
+    display: none;
+    position: absolute;
+    top: 70px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    background-color: white;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+  }
+
+  .navLinks.active {
+    display: flex;
+  }
+
+  .navLink {
+    width: 100%;
+    text-align: center;
+    padding: 0.75rem 1rem;
+  }
+}

@@ -1,0 +1,217 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-medium);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  letter-spacing: 0.01em;
+  box-shadow: var(--shadow-sm);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--primary-300);
+  outline-offset: 2px;
+  box-shadow: var(--shadow-md);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Variants */
+.primary {
+  background-color: var(--primary-600);
+  color: white;
+  background-image: linear-gradient(to bottom, var(--primary-500), var(--primary-600));
+}
+
+.primary:hover:not(:disabled) {
+  background-color: var(--primary-700);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  background-image: linear-gradient(to bottom, var(--primary-600), var(--primary-700));
+}
+
+.secondary {
+  background-color: var(--secondary-600);
+  color: white;
+  background-image: linear-gradient(to bottom, var(--secondary-500), var(--secondary-600));
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: var(--secondary-700);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  background-image: linear-gradient(to bottom, var(--secondary-600), var(--secondary-700));
+}
+
+.outline {
+  background-color: transparent;
+  border: 1px solid var(--gray-300);
+  color: var(--gray-700);
+  box-shadow: none;
+}
+
+.outline:hover:not(:disabled) {
+  border-color: var(--gray-400);
+  background-color: var(--gray-100);
+  transform: translateY(-1px);
+}
+
+.text {
+  background-color: transparent;
+  color: var(--primary-600);
+  padding: 0;
+  box-shadow: none;
+}
+
+.text:hover:not(:disabled) {
+  color: var(--primary-700);
+  text-decoration: underline;
+}
+
+.success {
+  background-color: var(--success-600);
+  color: white;
+}
+
+.success:hover:not(:disabled) {
+  background-color: var(--success-700);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.danger {
+  background-color: var(--danger-600);
+  color: white;
+}
+
+.danger:hover:not(:disabled) {
+  background-color: var(--danger-700);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.warning {
+  background-color: var(--warning-600);
+  color: white;
+}
+
+.warning:hover:not(:disabled) {
+  background-color: var(--warning-700);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.info {
+  background-color: var(--info-600);
+  color: white;
+}
+
+.info:hover:not(:disabled) {
+  background-color: var(--info-700);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Sizes */
+.small {
+  padding: 0.375rem 0.75rem;
+  font-size: var(--text-sm);
+}
+
+.medium {
+  padding: 0.5rem 1rem;
+  font-size: var(--text-base);
+}
+
+.large {
+  padding: 0.75rem 1.5rem;
+  font-size: var(--text-lg);
+}
+
+/* Full width */
+.fullWidth {
+  width: 100%;
+}
+
+/* Icon */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+}
+
+.icon:last-child {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+/* Loading state */
+.loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.loading::after {
+  content: "";
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid;
+  border-radius: 50%;
+  border-color: currentColor transparent transparent;
+  animation: spin 0.6s linear infinite;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Icon spacing */
+.icon + span {
+  margin-left: 0.5rem;
+}
+
+span + .icon {
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+/* Group styles for better organization */
+.button.small .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.button.medium .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.button.large .icon {
+  width: 1.5rem;
+  height: 1.5rem;
+} 
