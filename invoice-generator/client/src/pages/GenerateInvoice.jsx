@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import styles from './GenerateInvoice.module.css';
 import { useAuth } from '../context/AuthContext';
+import toast, { Toaster } from 'react-hot-toast';
 
 const GenerateInvoice = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const GenerateInvoice = () => {
   const [invoiceData, setInvoiceData] = useState(null);
   const { user } = useAuth();
   const [validationErrors, setValidationErrors] = useState([]);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     const savedData = localStorage.getItem('invoiceData');
@@ -29,6 +31,11 @@ const GenerateInvoice = () => {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    // Log user data when component mounts or user changes
+    console.log('Current user data in GenerateInvoice:', user);
+  }, [user]);
+
   const handleBack = () => {
     navigate('/expenses');
   };
@@ -39,176 +46,181 @@ const GenerateInvoice = () => {
       setError(null);
       setValidationErrors([]);
 
-      // Get invoice data from localStorage
-      const invoiceData = JSON.parse(localStorage.getItem('invoiceData'));
       if (!invoiceData) {
         throw new Error('No invoice data found');
       }
 
-      // Log the exact structure of each required field
-      console.log('=== Invoice Data Debug ===');
-      console.log('Employee:', {
-        employeeName: invoiceData.employee?.employeeName,
-        department: invoiceData.employee?.department,
-        tourPeriod: invoiceData.employee?.tourPeriod
+      // Get userId from user object, handling both _id and id formats
+      const userId = user?._id || user?.id;
+      console.log('User data for invoice generation:', { 
+        user, 
+        hasId: !!user?.id, 
+        has_Id: !!user?._id,
+        userId
       });
-      console.log('Tour Summary:', {
-        hasDetails: Boolean(invoiceData.tourSummary?.tourDetails),
-        detailsLength: invoiceData.tourSummary?.tourDetails?.length,
-        details: invoiceData.tourSummary?.tourDetails
-      });
-      console.log('Bills:', {
-        count: invoiceData.bills?.length,
-        isArray: Array.isArray(invoiceData.bills),
-        data: invoiceData.bills
-      });
-      console.log('Expenses:', {
-        count: invoiceData.expenses?.length,
-        isArray: Array.isArray(invoiceData.expenses),
-        data: invoiceData.expenses
-      });
-      console.log('Daily Allowance:', invoiceData.dailyAllowance);
-      console.log('========================');
 
-      try {
-        // First validate the data
-        const validationResponse = await axios.post(
-          'http://localhost:5000/generate-invoice/validate',
-          invoiceData,
+      if (!user || !userId) {
+        throw new Error('User information not available. Please log in again.');
+      }
+
+      // Clone data for validation to avoid modifying the original
+      const validationData = {
+        userId: userId, // Include the user ID
+        employee: { ...invoiceData.employee },
+        tourSummary: {
+          tourDetails: Array.isArray(invoiceData.tourSummary?.tourDetails) 
+            ? [...invoiceData.tourSummary.tourDetails] 
+            : []
+        },
+        bills: Array.isArray(invoiceData.bills) ? [...invoiceData.bills] : [],
+        expenses: Array.isArray(invoiceData.expenses) ? [...invoiceData.expenses] : [],
+        dailyAllowance: {
+          daDays: invoiceData.dailyAllowance?.daDays || 0,
+          daAmount: invoiceData.dailyAllowance?.daAmount || 0,
+          onFor: invoiceData.dailyAllowance?.onFor || '',
+          hotelBillDays: invoiceData.dailyAllowance?.hotelBillDays || 0,
+          totalDays: invoiceData.dailyAllowance?.daDays || 0,
+          ratePerDay: (invoiceData.dailyAllowance?.daAmount || 0) / (invoiceData.dailyAllowance?.daDays || 1)
+        },
+        totalBillAmount: parseFloat(invoiceData.totalBillAmount || 0),
+        totalExpenses: parseFloat(invoiceData.totalExpenses || 0),
+        totalAmount: parseFloat(invoiceData.grandTotal || 0) // Use totalAmount to match Invoice model
+      };
+
+      // Log data for validation
+      console.log('Sending data for validation:', validationData);
+
+      // First validate the data
+      const validationResponse = await axios.post(
+        'http://localhost:5000/generate-invoice/validate',
+        validationData
+      );
+
+      console.log('Validation response:', validationResponse.data);
+
+      if (validationResponse.data.success) {
+        // If validation is successful, proceed with PDF generation
+        console.log('Validation passed, generating PDF...');
+        
+        // Use the same validated data for PDF generation
+        const response = await axios.post(
+          'http://localhost:5000/generate-invoice',
+          validationData,
           {
-            headers: {
-              'Content-Type': 'application/json'
-            }
+            responseType: 'blob'
           }
         );
 
-        console.log('Validation response:', validationResponse.data);
-
-        if (validationResponse.data.message === 'Data validation successful') {
-          // If validation passes, generate the PDF
-          try {
-            console.log('Sending request for PDF generation...');
-            const response = await axios.post(
-              'http://localhost:5000/direct-generate-pdf',
-              invoiceData,
-              {
-                responseType: 'blob',
-                headers: {
-                  'Accept': 'application/pdf',
-                  'Content-Type': 'application/json'
-                },
-                withCredentials: true
-              }
-            );
-
-            console.log('Response received, content type:', response.headers['content-type']);
-            
-            // Check if the response is a PDF
-            if (response.headers['content-type']?.includes('application/pdf')) {
-              console.log('PDF received, creating download link');
-              // Create a URL for the blob
-              const blob = new Blob([response.data], { type: 'application/pdf' });
-              const url = window.URL.createObjectURL(blob);
-              
-              // Create a download link
-              const link = document.createElement('a');
-              link.href = url;
-              link.setAttribute('download', 'invoice.pdf');
-              document.body.appendChild(link);
-              
-              // Trigger download
-              console.log('Triggering download');
-              link.click();
-              
-              // Cleanup
-              link.remove();
-              window.URL.revokeObjectURL(url);
-              
-              console.log('Download initiated');
-
-              // Clear the stored data after successful generation
-              localStorage.removeItem('invoiceData');
-              localStorage.removeItem('bills');
-              localStorage.removeItem('expenses');
-              localStorage.removeItem('conveniences');
-              localStorage.removeItem('dailyAllowance');
-              localStorage.removeItem('totalBillAmount');
-              localStorage.removeItem('totalConvenienceAmount');
-
-              setLoading(false);
-              // Navigate to invoice history
-              navigate('/invoice-history');
-            } else {
-              // If not a PDF, it's an error response
-              const reader = new FileReader();
-              reader.onload = async () => {
-                try {
-                  const errorData = JSON.parse(reader.result);
-                  console.error('Server Error Details:', errorData);
-                  setError(errorData.details || errorData.error || 'Failed to generate invoice');
-                } catch (e) {
-                  console.error('Error parsing error response:', e);
-                  setError('Failed to generate invoice: Unknown error');
-                }
-                setLoading(false);
-              };
-              reader.onerror = () => {
-                console.error('Error reading error response');
-                setError('Failed to generate invoice: Could not read error response');
-                setLoading(false);
-              };
-              reader.readAsText(response.data);
-            }
-          } catch (generateError) {
-            console.error('=== Invoice Generation Error ===');
-            console.error('Error:', generateError.message);
-            if (generateError.response?.data instanceof Blob) {
-              const reader = new FileReader();
-              reader.onload = async () => {
-                try {
-                  const errorData = JSON.parse(reader.result);
-                  console.error('Server Error Details:', errorData);
-                  setError(errorData.details || errorData.error || 'Failed to generate invoice');
-                } catch (e) {
-                  setError('Failed to generate invoice: ' + generateError.message);
-                }
-                setLoading(false);
-              };
-              reader.onerror = () => {
-                setError('Failed to generate invoice: ' + generateError.message);
-                setLoading(false);
-              };
-              reader.readAsText(generateError.response.data);
-            } else {
-              setError('Failed to generate invoice: ' + generateError.message);
-              setLoading(false);
-            }
-          }
-        }
-      } catch (validationError) {
-        console.error('=== Validation Error Details ===');
-        console.error('Error:', validationError.message);
-        console.error('Status:', validationError.response?.status);
-        console.error('Response Data:', validationError.response?.data);
+        // Create download link for the PDF
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        const filename = `invoice_${invoiceData.employee?.employeeName || 'unnamed'}_${new Date().toISOString().split('T')[0]}.pdf`;
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
         
-        if (validationError.response?.data) {
-          if (validationError.response.data.validationErrors) {
-            setValidationErrors(validationError.response.data.validationErrors);
-          } else if (validationError.response.data.details) {
-            const details = validationError.response.data.details;
-            const errorArray = details.split('; ');
-            setValidationErrors(errorArray);
-          } else {
-            setError('Server validation failed: ' + JSON.stringify(validationError.response.data));
-          }
-        } else {
-          setError('Failed to validate invoice data');
+        // Save the invoice to the database
+        try {
+          console.log('Saving invoice to database...');
+          const saveResponse = await axios.post(
+            'http://localhost:5000/invoice',
+            validationData,
+            {
+              withCredentials: true
+            }
+          );
+          console.log('Invoice saved successfully:', saveResponse.data);
+        } catch (saveError) {
+          console.error('Error saving invoice to database:', saveError);
+          toast.error('Invoice generated but could not be saved to your history.');
         }
-        setLoading(false);
+        
+        setSuccess(true);
+        // Clear the stored data after successful generation
+        localStorage.removeItem('invoiceData');
+        localStorage.removeItem('bills');
+        localStorage.removeItem('expenses');
+        localStorage.removeItem('conveniences');
+        localStorage.removeItem('dailyAllowance');
+        localStorage.removeItem('totalBillAmount');
+        localStorage.removeItem('totalConvenienceAmount');
+        
+        // Success message
+        toast.success('Invoice generated successfully!');
+        
+        // Navigate to invoice history after a short delay
+        setTimeout(() => {
+          navigate('/invoice-history');
+        }, 2000);
+      } else {
+        // Handle validation errors
+        setError('Validation failed: ' + (validationResponse.data.message || 'Unknown error'));
+        
+        if (validationResponse.data.errors && validationResponse.data.errors.length > 0) {
+          setValidationErrors(validationResponse.data.errors);
+          console.error('Validation errors:', validationResponse.data.errors);
+        }
       }
     } catch (error) {
-      console.error('General Error:', error);
-      setError(error.message || 'Failed to generate invoice');
+      console.error('Error during invoice generation:', error);
+      
+      // Enhanced error handling for various failure scenarios
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Server responded with an error:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        });
+        
+        // Check if the response data is a blob (PDF generation error)
+        if (error.response.data instanceof Blob) {
+          try {
+            // Try to read the blob as text to get the error message
+            const errorText = await error.response.data.text();
+            try {
+              const errorJson = JSON.parse(errorText);
+              setError(`Server error: ${errorJson.message || errorJson.error || 'Unknown error'}`);
+            } catch (parseError) {
+              setError(`Server error: ${errorText.substring(0, 100)}`);
+            }
+          } catch (blobError) {
+            setError(`Server returned an error (${error.response.status}): Unable to parse error details`);
+          }
+        } else if (error.response.data) {
+          // Handle structured error response
+          const errorMessage = error.response.data.message || 
+                             error.response.data.error || 
+                             'Unknown server error';
+          
+          setError(`Server error: ${errorMessage}`);
+          
+          // Set validation errors if they exist
+          if (error.response.data.errors) {
+            setValidationErrors(
+              Array.isArray(error.response.data.errors) 
+                ? error.response.data.errors 
+                : [error.response.data.errors]
+            );
+          }
+        } else {
+          setError(`Server error (${error.response.status}): ${error.response.statusText}`);
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received from server:', error.request);
+        setError('No response from server. Please check if the server is running.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error setting up request:', error.message);
+        setError(`Error: ${error.message}`);
+      }
+      
+      toast.error('Failed to generate invoice. Please check the errors.');
+    } finally {
       setLoading(false);
     }
   };
@@ -220,6 +232,7 @@ const GenerateInvoice = () => {
 
   return (
     <div className={styles.container}>
+      <Toaster position="top-right" />
       <h1>Generate Invoice</h1>
 
       {error && <div className={styles.error}>{error}</div>}

@@ -10,7 +10,7 @@ import GenerateInvoice from './pages/GenerateInvoice';
 import InvoiceHistory from './pages/InvoiceHistory';
 import Login from './pages/Login';
 import './App.css';
-import { AuthProvider } from './context/AuthContext.jsx';  // Updated import path
+import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import EditProfile from './pages/EditProfile';
 // Import AdminDashboard
@@ -25,14 +25,53 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<Home />} />
-            <Route path="/basic-details" element={<BasicDetails />} />
-            <Route path="/tour-summary" element={<TourSummary />} />
-            <Route path="/bill-details" element={<BillDetails />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/generate-invoice" element={<GenerateInvoice />} />
-            <Route path="/invoice-history" element={<InvoiceHistory />} />
-            <Route path="/profile" element={<EditProfile />} />
-            <Route path="/admin" element={<AdminDashboard />} />
+            
+            {/* Protected Routes - Require Authentication */}
+            <Route path="/basic-details" element={
+              <ProtectedRoute>
+                <BasicDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/tour-summary" element={
+              <ProtectedRoute>
+                <TourSummary />
+              </ProtectedRoute>
+            } />
+            <Route path="/bill-details" element={
+              <ProtectedRoute>
+                <BillDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/expenses" element={
+              <ProtectedRoute>
+                <Expenses />
+              </ProtectedRoute>
+            } />
+            <Route path="/generate-invoice" element={
+              <ProtectedRoute>
+                <GenerateInvoice />
+              </ProtectedRoute>
+            } />
+            <Route path="/invoice-history" element={
+              <ProtectedRoute>
+                <InvoiceHistory />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <EditProfile />
+              </ProtectedRoute>
+            } />
+            {/* Admin Dashboard */}
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute adminRequired={true}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

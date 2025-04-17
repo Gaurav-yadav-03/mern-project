@@ -6,9 +6,11 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Table from '../components/Table';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
 
 const InvoiceHistory = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user, loading: authLoading } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,17 +22,47 @@ const InvoiceHistory = () => {
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
 
   useEffect(() => {
-    fetchInvoices();
-  }, []);
+    // Only fetch invoices if the user is authenticated
+    if (isAuthenticated && !authLoading) {
+      fetchInvoices();
+    } else if (!authLoading && !isAuthenticated) {
+      // If not authenticated and not still loading auth status, redirect to login
+      navigate('/login');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const fetchInvoices = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/invoice/all');
+      setLoading(true);
+      
+      // Add user ID to query params to fetch only user's invoices
+      const userId = user?._id;
+      if (!userId) {
+        setError('User information not available');
+        setLoading(false);
+        return;
+      }
+      
+      // Update the endpoint to fetch only user's invoices
+      const response = await axios.get(`http://localhost:5000/invoice/user/${userId}`, {
+        withCredentials: true
+      });
+      
       setInvoices(response.data);
       setError(null);
     } catch (error) {
       console.error('Error fetching invoices:', error);
-      setError('Failed to fetch invoices. Please try again.');
+      let errorMessage = 'Failed to fetch invoices. ';
+      
+      if (error.response) {
+        errorMessage += error.response.data?.error || `Server returned ${error.response.status}`;
+      } else if (error.request) {
+        errorMessage += 'No response received from server.';
+      } else {
+        errorMessage += error.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -61,7 +93,8 @@ const InvoiceHistory = () => {
       const response = await axios.delete(`http://localhost:5000/invoice/${invoiceToDelete._id}`, {
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        withCredentials: true
       });
       
       if (response.status === 200) {
@@ -206,6 +239,24 @@ const InvoiceHistory = () => {
       setLoading(false);
     }
   };
+
+  // Skip if still loading authentication or user not authenticated
+  if (authLoading) {
+    return (
+      <div className={styles.container}>
+        <Card padding="large" shadow="medium">
+          <div className={styles.loading}>
+            <div className={styles.spinner}></div>
+            <p>Checking authentication...</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // This will be redirected by the useEffect
+  }
 
   if (loading && invoices.length === 0) {
     return (
