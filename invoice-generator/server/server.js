@@ -433,7 +433,7 @@ const connectDB = async () => {
 // Initialize MongoDB connection
 connectDB();
 
-// Direct PDF generation endpoint - no database
+// Direct PDF generation endpoint - with database save
 app.post('/direct-generate-pdf', async (req, res) => {
   try {
     console.log('=== Direct PDF Generation Request ===');
@@ -466,6 +466,38 @@ app.post('/direct-generate-pdf', async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
     
+    // Save to database in background (don't wait for it)
+    try {
+      // Generate invoice number (timestamp-based)
+      const invoiceNumber = `INV-${Date.now()}`;
+      
+      // Create a new invoice document with minimal fields
+      const newInvoice = new Invoice({
+        invoiceNumber,
+        employee: req.body.employee,
+        tourSummary: req.body.tourSummary,
+        bills: req.body.bills || [],
+        expenses: req.body.expenses || [],
+        dailyAllowance: req.body.dailyAllowance || {},
+        totalAmount: req.body.grandTotal || 0,
+        status: 'pending',
+        createdAt: new Date()
+      });
+
+      // If user is authenticated, add userId
+      if (req.user && req.user._id) {
+        newInvoice.userId = req.user._id;
+      }
+
+      // Save to database without waiting for completion
+      newInvoice.save()
+        .then(() => console.log('Invoice saved to database:', invoiceNumber))
+        .catch(err => console.error('Error saving invoice to database:', err));
+    } catch (dbError) {
+      // Just log database errors but continue with PDF download
+      console.error('Database save error (non-blocking):', dbError);
+    }
+    
     // Send the file directly
     fs.createReadStream(filePath).pipe(res);
     
@@ -483,5 +515,46 @@ app.post('/direct-generate-pdf', async (req, res) => {
       error: 'Failed to generate PDF',
       details: error.message
     });
+  }
+});
+
+// Debug endpoint to help locate bill images
+app.get('/debug-file-paths', (req, res) => {
+  try {
+    const paths = {
+      currentDirectory: __dirname,
+      serverRoot: path.join(__dirname, '..'),
+      uploadsDirectory: path.join(__dirname, 'uploads'),
+      billsDirectory: path.join(__dirname, 'bills'),
+      generatedDirectory: path.join(__dirname, 'generated'),
+      currentWorkingDirectory: process.cwd(),
+      existingDirectories: {}
+    };
+    
+    // Check which directories exist
+    const dirsToCheck = [
+      paths.uploadsDirectory, 
+      paths.billsDirectory, 
+      paths.generatedDirectory,
+      path.join(__dirname, '..', 'uploads'),
+      path.join(__dirname, '..', 'bills')
+    ];
+    
+    dirsToCheck.forEach(dir => {
+      paths.existingDirectories[dir] = fs.existsSync(dir);
+      
+      // If directory exists, list some files
+      if (fs.existsSync(dir)) {
+        try {
+          paths.existingDirectories[dir + '_files'] = fs.readdirSync(dir).slice(0, 10);
+        } catch (err) {
+          paths.existingDirectories[dir + '_error'] = err.message;
+        }
+      }
+    });
+    
+    res.json(paths);
+  } catch (error) {
+    res.status(500).json({ error: 'Error checking paths', details: error.message });
   }
 });
