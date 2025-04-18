@@ -2,14 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import styles from './BillDetails.module.css';
+import '../theme.css';
+import { ReceiptIcon, MoneyIcon, CarIcon, FileIcon, PlusIcon, TrashIcon, ArrowRightIcon } from '../icons.jsx';
+
+// Define common mode of travel options
+const TRAVEL_MODES = ['Car', 'Bike', 'Taxi', 'Bus', 'Train', 'Flight', 'Metro', 'Other'];
+
+// Define common Indian cities
+const COMMON_CITIES = [
+  'Delhi',
+  'Mumbai',
+  'Bangalore',
+  'Chennai',
+  'Kolkata',
+  'Hyderabad',
+  'Pune',
+  'Ahmedabad',
+  'Jaipur',
+  'Lucknow',
+  'Chandigarh',
+  'Bhopal',
+  'Kochi',
+  'Guwahati',
+  'Patna'
+];
 
 const BillDetails = () => {
   const navigate = useNavigate();
   const [bills, setBills] = useState([]);
-  const [conveniences, setConveniences] = useState([]);
+  const [conveyances, setConveyances] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
-  const [totalConvenienceAmount, setTotalConvenienceAmount] = useState(0);
-  const [showConvenienceForm, setShowConvenienceForm] = useState(false);
+  const [totalConveyanceAmount, setTotalConveyanceAmount] = useState(0);
+  const [showConveyanceForm, setShowConveyanceForm] = useState(false);
   const [newBill, setNewBill] = useState({
     name: '',
     place: '',
@@ -18,43 +42,50 @@ const BillDetails = () => {
     amount: '',
     file: null
   });
-  const [newConvenience, setNewConvenience] = useState({
+  const [newConveyance, setNewConveyance] = useState({
     date: '',
     place: '',
     from: '',
     to: '',
     mode: '',
-    amount: ''
+    amount: '',
+    file: null,
+    isCustomFromCity: false,
+    isCustomToCity: false,
+    isCustomMode: false
   });
   const [loading, setLoading] = useState(false);
+  const [conveyanceLoading, setConveyanceLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedFileName, setSelectedFileName] = useState('');
+  const [selectedConveyanceFileName, setSelectedConveyanceFileName] = useState('');
 
   useEffect(() => {
     // Load existing data from localStorage
     const savedBills = localStorage.getItem('bills');
-    const savedConveniences = localStorage.getItem('conveniences');
+    const savedConveyances = localStorage.getItem('conveyances');
     
     if (savedBills) {
       setBills(JSON.parse(savedBills));
     }
     
-    if (savedConveniences) {
-      setConveniences(JSON.parse(savedConveniences));
+    if (savedConveyances) {
+      setConveyances(JSON.parse(savedConveyances));
     }
   }, []);
 
   useEffect(() => {
-    // Calculate total amount whenever bills or conveniences change
+    // Calculate total amount whenever bills or conveyances change
     const billsTotal = bills.reduce((sum, bill) => sum + Number(bill.amount || 0), 0);
-    const conveniencesTotal = conveniences.reduce((sum, conv) => sum + Number(conv.amount || 0), 0);
+    const conveyancesTotal = conveyances.reduce((sum, conv) => sum + Number(conv.amount || 0), 0);
     
     setTotalAmount(billsTotal);
-    setTotalConvenienceAmount(conveniencesTotal);
+    setTotalConveyanceAmount(conveyancesTotal);
     
     // Save to localStorage
     localStorage.setItem('bills', JSON.stringify(bills));
-    localStorage.setItem('conveniences', JSON.stringify(conveniences));
-  }, [bills, conveniences]);
+    localStorage.setItem('conveyances', JSON.stringify(conveyances));
+  }, [bills, conveyances]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -64,19 +95,103 @@ const BillDetails = () => {
     });
   };
 
-  const handleConvenienceInputChange = (e) => {
+  const handleConveyanceInputChange = (e, field) => {
     const { name, value } = e.target;
-    setNewConvenience({
-      ...newConvenience,
+    
+    if (field === "customMode") {
+      setNewConveyance({
+        ...newConveyance,
+        mode: value
+      });
+      return;
+    }
+    
+    if (field === "customFrom") {
+      setNewConveyance({
+        ...newConveyance,
+        from: value
+      });
+      return;
+    }
+    
+    if (field === "customTo") {
+      setNewConveyance({
+        ...newConveyance,
+        to: value
+      });
+      return;
+    }
+    
+    if (name === "mode" && value === "Other") {
+      setNewConveyance({
+        ...newConveyance,
+        mode: '',
+        isCustomMode: true
+      });
+      return;
+    } else if (name === "mode") {
+      setNewConveyance({
+        ...newConveyance,
+        mode: value,
+        isCustomMode: false
+      });
+      return;
+    }
+    
+    if (name === "from" && value === "Other") {
+      setNewConveyance({
+        ...newConveyance,
+        from: '',
+        isCustomFromCity: true
+      });
+      return;
+    } else if (name === "from") {
+      setNewConveyance({
+        ...newConveyance,
+        from: value,
+        isCustomFromCity: false
+      });
+      return;
+    }
+    
+    if (name === "to" && value === "Other") {
+      setNewConveyance({
+        ...newConveyance,
+        to: '',
+        isCustomToCity: true
+      });
+      return;
+    } else if (name === "to") {
+      setNewConveyance({
+        ...newConveyance,
+        to: value,
+        isCustomToCity: false
+      });
+      return;
+    }
+    
+    setNewConveyance({
+      ...newConveyance,
       [name]: value
     });
   };
 
   const handleFileChange = (e) => {
+    const file = e.target.files[0];
     setNewBill({
       ...newBill,
-      file: e.target.files[0]
+      file: file
     });
+    setSelectedFileName(file ? file.name : '');
+  };
+
+  const handleConveyanceFileChange = (e) => {
+    const file = e.target.files[0];
+    setNewConveyance({
+      ...newConveyance,
+      file: file
+    });
+    setSelectedConveyanceFileName(file ? file.name : '');
   };
 
   const handleAddBill = async () => {
@@ -119,6 +234,7 @@ const BillDetails = () => {
         amount: '',
         file: null
       });
+      setSelectedFileName('');
     } catch (err) {
       console.error('Error uploading file:', err);
       setError('Failed to upload file. Please try again.');
@@ -127,60 +243,94 @@ const BillDetails = () => {
     }
   };
 
-  const handleAddConvenience = () => {
-    if (!newConvenience.date || !newConvenience.amount) {
+  const handleAddConveyance = async () => {
+    if (!newConveyance.date || !newConveyance.amount) {
       alert('Please fill in at least the date and amount fields');
       return;
     }
     
-    const convenienceToAdd = {
-      ...newConvenience,
-      id: Date.now().toString()
-    };
-    
-    setConveniences([...conveniences, convenienceToAdd]);
-    setNewConvenience({
-      date: '',
-      place: '',
-      from: '',
-      to: '',
-      mode: '',
-      amount: ''
-    });
-    setShowConvenienceForm(false);
+    try {
+      setConveyanceLoading(true);
+      setError(null);
+      
+      let fileUrl = '';
+      
+      if (newConveyance.file) {
+        const formData = new FormData();
+        formData.append('bill', newConveyance.file);
+        
+        const response = await axios.post('http://localhost:5000/upload/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        
+        fileUrl = response.data.fileUrl;
+      }
+      
+      // Clean up the object to remove flag properties
+      const { isCustomMode, isCustomFromCity, isCustomToCity, ...cleanConveyance } = newConveyance;
+      
+      const conveyanceToAdd = {
+        ...cleanConveyance,
+        fileUrl,
+        id: Date.now().toString()
+      };
+      
+      setConveyances([...conveyances, conveyanceToAdd]);
+      setNewConveyance({
+        date: '',
+        place: '',
+        from: '',
+        to: '',
+        mode: '',
+        amount: '',
+        file: null,
+        isCustomMode: false,
+        isCustomFromCity: false,
+        isCustomToCity: false
+      });
+      setSelectedConveyanceFileName('');
+      setShowConveyanceForm(false);
+    } catch (err) {
+      console.error('Error uploading file:', err);
+      setError('Failed to upload conveyance bill. Please try again.');
+    } finally {
+      setConveyanceLoading(false);
+    }
   };
 
   const handleDeleteBill = (id) => {
     setBills(bills.filter(bill => bill.id !== id));
   };
 
-  const handleDeleteConvenience = (id) => {
-    setConveniences(conveniences.filter(conv => conv.id !== id));
+  const handleDeleteConveyance = (id) => {
+    setConveyances(conveyances.filter(conv => conv.id !== id));
   };
 
   const handleSubmit = () => {
-    if (bills.length === 0 && conveniences.length === 0) {
-      alert('Please add at least one bill or convenience charge');
+    if (bills.length === 0 && conveyances.length === 0) {
+      alert('Please add at least one bill or conveyance charge');
       return;
     }
     
-    // Calculate total convenience amount
-    const totalConvenienceAmount = conveniences.reduce((sum, conv) => sum + Number(conv.amount || 0), 0);
+    // Calculate total conveyance amount
+    const totalConveyanceAmount = conveyances.reduce((sum, conv) => sum + Number(conv.amount || 0), 0);
     
     // Save data to localStorage
     localStorage.setItem('bills', JSON.stringify(bills));
-    localStorage.setItem('conveniences', JSON.stringify(conveniences));
+    localStorage.setItem('conveyances', JSON.stringify(conveyances));
     localStorage.setItem('totalBillAmount', totalAmount.toString());
-    localStorage.setItem('totalConvenienceAmount', totalConvenienceAmount.toString());
+    localStorage.setItem('totalConveyanceAmount', totalConveyanceAmount.toString());
     
     // Update invoiceData in localStorage
     const existingData = JSON.parse(localStorage.getItem('invoiceData') || '{}');
     const updatedData = {
       ...existingData,
       bills,
-      conveniences,
+      conveyances,
       totalBillAmount: totalAmount,
-      totalConvenienceAmount: totalConvenienceAmount
+      totalConveyanceAmount: totalConveyanceAmount
     };
     localStorage.setItem('invoiceData', JSON.stringify(updatedData));
     
@@ -188,190 +338,157 @@ const BillDetails = () => {
     navigate('/expenses');
   };
 
+  // Update the hotel bill view handler
+  const handleViewBill = (fileUrl, e) => {
+    e.preventDefault();
+    // Ensure the URL is properly formatted
+    if (fileUrl) {
+      // Check if URL is a relative path
+      if (!fileUrl.startsWith('http')) {
+        // Prepend server URL for relative paths
+        window.open(`http://localhost:5000${fileUrl}`, '_blank');
+      } else {
+        window.open(fileUrl, '_blank');
+      }
+    }
+  };
+
   return (
-    <div className={styles.container}>
-      <h1>Bill Details</h1>
-      
-      {error && <div className={styles.error}>{error}</div>}
-      
-      <div className={styles.formSection}>
-        <h2>Add Bill</h2>
-        <div className={styles.form}>
-          <div className={styles.formGroup}>
-            <label htmlFor="name">Hotel/Restaurant Name*</label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={newBill.name}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          
-          <div className={styles.formGroup}>
-            <label htmlFor="place">Place</label>
-            <input
-              type="text"
-              id="place"
-              name="place"
-              value={newBill.place}
-              onChange={handleInputChange}
-            />
-          </div>
-          
-          <div className={styles.formGroup}>
-            <label htmlFor="billNo">Bill No</label>
-            <input
-              type="text"
-              id="billNo"
-              name="billNo"
-              value={newBill.billNo}
-              onChange={handleInputChange}
-            />
-          </div>
-          
-          <div className={styles.formGroup}>
-            <label htmlFor="billDate">Bill Date</label>
-            <input
-              type="date"
-              id="billDate"
-              name="billDate"
-              value={newBill.billDate}
-              onChange={handleInputChange}
-            />
-          </div>
-          
-          <div className={styles.formGroup}>
-            <label htmlFor="amount">Amount*</label>
-            <input
-              type="number"
-              id="amount"
-              name="amount"
-              value={newBill.amount}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          
-          <div className={styles.formGroup}>
-            <label htmlFor="file">Upload Bill</label>
-            <input
-              type="file"
-              id="file"
-              name="file"
-              onChange={handleFileChange}
-              accept="image/*,.pdf"
-            />
-          </div>
-          
-          <button 
-            className={styles.addButton}
-            onClick={handleAddBill}
-            disabled={loading}
-          >
-            {loading ? 'Adding...' : 'Add Bill'}
-          </button>
-        </div>
+    <div className="theme-form-container">
+      <div className="theme-form-header">
+        <h1>Bill Details</h1>
       </div>
       
-      <div className={styles.convenienceSection}>
-        <div className={styles.convenienceHeader}>
-          <h2>Convenience Charges</h2>
-          <button 
-            className={styles.toggleButton}
-            onClick={() => setShowConvenienceForm(!showConvenienceForm)}
-          >
-            {showConvenienceForm ? 'Hide Form' : 'Add Convenience'}
-          </button>
+      {error && <div className="theme-card" style={{ backgroundColor: 'var(--danger-50)', color: 'var(--danger-700)', marginBottom: '20px', padding: '10px 16px' }}>{error}</div>}
+      
+      <div className="theme-card">
+        <div className="theme-card-header">
+          <h2 className="theme-card-title">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ReceiptIcon color="var(--theme-primary)" size={18} />
+              <span>Add Hotel/Restaurant Bill</span>
+            </div>
+          </h2>
+        </div>
+        <div className="theme-form-row">
+          <div className="theme-form-col">
+            <div className="theme-form-group">
+              <label htmlFor="name">Hotel/Restaurant Name*</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={newBill.name}
+                onChange={handleInputChange}
+                required
+                className="theme-form-input"
+              />
+            </div>
+          </div>
+          
+          <div className="theme-form-col">
+            <div className="theme-form-group">
+              <label htmlFor="place">Place</label>
+              <input
+                type="text"
+                id="place"
+                name="place"
+                value={newBill.place}
+                onChange={handleInputChange}
+                className="theme-form-input"
+              />
+            </div>
+          </div>
         </div>
         
-        {showConvenienceForm && (
-          <div className={styles.form}>
-            <div className={styles.formGroup}>
-              <label htmlFor="convDate">Date*</label>
+        <div className="theme-form-row">
+          <div className="theme-form-col">
+            <div className="theme-form-group">
+              <label htmlFor="billNo">Bill No</label>
+              <input
+                type="text"
+                id="billNo"
+                name="billNo"
+                value={newBill.billNo}
+                onChange={handleInputChange}
+                className="theme-form-input"
+              />
+            </div>
+          </div>
+          
+          <div className="theme-form-col">
+            <div className="theme-form-group">
+              <label htmlFor="billDate">Bill Date</label>
               <input
                 type="date"
-                id="convDate"
-                name="date"
-                value={newConvenience.date}
-                onChange={handleConvenienceInputChange}
-                required
+                id="billDate"
+                name="billDate"
+                value={newBill.billDate}
+                onChange={handleInputChange}
+                className="theme-form-input"
               />
             </div>
-            
-            <div className={styles.formGroup}>
-              <label htmlFor="convPlace">Place</label>
-              <input
-                type="text"
-                id="convPlace"
-                name="place"
-                value={newConvenience.place}
-                onChange={handleConvenienceInputChange}
-              />
-            </div>
-            
-            <div className={styles.formGroup}>
-              <label htmlFor="convFrom">From</label>
-              <input
-                type="text"
-                id="convFrom"
-                name="from"
-                value={newConvenience.from}
-                onChange={handleConvenienceInputChange}
-              />
-            </div>
-            
-            <div className={styles.formGroup}>
-              <label htmlFor="convTo">To</label>
-              <input
-                type="text"
-                id="convTo"
-                name="to"
-                value={newConvenience.to}
-                onChange={handleConvenienceInputChange}
-              />
-            </div>
-            
-            <div className={styles.formGroup}>
-              <label htmlFor="convMode">Mode</label>
-              <input
-                type="text"
-                id="convMode"
-                name="mode"
-                value={newConvenience.mode}
-                onChange={handleConvenienceInputChange}
-              />
-            </div>
-            
-            <div className={styles.formGroup}>
-              <label htmlFor="convAmount">Amount*</label>
+          </div>
+          
+          <div className="theme-form-col">
+            <div className="theme-form-group">
+              <label htmlFor="amount">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MoneyIcon color="var(--theme-text-secondary)" size={16} />
+                  <span>Amount*</span>
+                </div>
+              </label>
               <input
                 type="number"
-                id="convAmount"
+                id="amount"
                 name="amount"
-                value={newConvenience.amount}
-                onChange={handleConvenienceInputChange}
+                value={newBill.amount}
+                onChange={handleInputChange}
                 required
+                className="theme-form-input"
               />
             </div>
-            
-            <button 
-              className={styles.addButton}
-              onClick={handleAddConvenience}
-            >
-              Add Convenience
-            </button>
           </div>
-        )}
+        </div>
+        
+        <div className="theme-form-group">
+          <label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FileIcon color="var(--theme-text-secondary)" size={16} />
+              <span>Bill Attachment</span>
+            </div>
+          </label>
+          <div className="theme-file-upload">
+            <label className="theme-file-label">
+              <input
+                type="file"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
+              Choose File
+            </label>
+            {selectedFileName && <span className="theme-file-name">{selectedFileName}</span>}
+          </div>
+        </div>
+        
+        <button
+          type="button"
+          onClick={handleAddBill}
+          disabled={loading}
+          className="theme-btn theme-btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <PlusIcon size={16} />
+          {loading ? 'Adding...' : 'Add Bill'}
+        </button>
       </div>
       
-      <div className={styles.billsList}>
-        <h2>Bills</h2>
-        {bills.length === 0 ? (
-          <p>No bills added yet</p>
-        ) : (
-          <table className={styles.table}>
+      {bills.length > 0 && (
+        <div className="theme-card">
+          <div className="theme-card-header">
+            <h2 className="theme-card-title">Added Bills</h2>
+          </div>
+          <table className="theme-table">
             <thead>
               <tr>
                 <th>Hotel/Restaurant</th>
@@ -379,30 +496,36 @@ const BillDetails = () => {
                 <th>Bill No</th>
                 <th>Date</th>
                 <th>Amount</th>
-                <th>File</th>
-                <th>Action</th>
+                <th>Bill</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {bills.map(bill => (
+              {bills.map((bill) => (
                 <tr key={bill.id}>
                   <td>{bill.name}</td>
                   <td>{bill.place}</td>
                   <td>{bill.billNo}</td>
                   <td>{bill.billDate}</td>
-                  <td>Rs. {Number(bill.amount).toLocaleString('en-IN')}</td>
+                  <td>₹{parseFloat(bill.amount).toFixed(2)}</td>
                   <td>
-                    {bill.fileUrl ? (
-                      <a href={bill.fileUrl} target="_blank" rel="noopener noreferrer">View</a>
-                    ) : (
-                      'No file'
+                    {bill.fileUrl && (
+                      <a 
+                        href="#" 
+                        onClick={(e) => handleViewBill(bill.fileUrl, e)} 
+                        className="theme-link"
+                      >
+                        View Bill
+                      </a>
                     )}
                   </td>
                   <td>
-                    <button 
-                      className={styles.deleteButton}
+                    <button
                       onClick={() => handleDeleteBill(bill.id)}
+                      className="theme-btn theme-btn-accent"
+                      style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
                     >
+                      <TrashIcon size={14} />
                       Delete
                     </button>
                   </td>
@@ -410,15 +533,221 @@ const BillDetails = () => {
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
       
-      <div className={styles.convenienceList}>
-        <h2>Convenience Charges</h2>
-        {conveniences.length === 0 ? (
-          <p>No convenience charges added yet</p>
-        ) : (
-          <table className={styles.table}>
+      <div className="theme-card">
+        <div className="theme-card-header">
+          <h2 className="theme-card-title">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CarIcon color="var(--theme-primary)" size={18} />
+              <span>Conveyance Charges</span>
+            </div>
+          </h2>
+          {!showConveyanceForm && (
+            <button
+              onClick={() => setShowConveyanceForm(true)}
+              className="theme-btn theme-btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <PlusIcon size={14} />
+              Add Conveyance
+            </button>
+          )}
+        </div>
+        
+        {showConveyanceForm && (
+          <div className="theme-form-content" style={{ boxShadow: 'none', padding: '0', marginBottom: '20px' }}>
+            <div className="theme-form-row">
+              <div className="theme-form-col">
+                <div className="theme-form-group">
+                  <label htmlFor="date">Date*</label>
+                  <input
+                    type="date"
+                    id="date"
+                    name="date"
+                    value={newConveyance.date}
+                    onChange={(e) => handleConveyanceInputChange(e)}
+                    required
+                    className="theme-form-input"
+                  />
+                </div>
+              </div>
+              
+              <div className="theme-form-col">
+                <div className="theme-form-group">
+                  <label htmlFor="place">Place</label>
+                  <input
+                    type="text"
+                    id="place"
+                    name="place"
+                    value={newConveyance.place}
+                    onChange={(e) => handleConveyanceInputChange(e)}
+                    className="theme-form-input"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="theme-form-row">
+              <div className="theme-form-col">
+                <div className="theme-form-group">
+                  <label htmlFor="from">From</label>
+                  {newConveyance.isCustomFromCity ? (
+                    <input
+                      type="text"
+                      id="customFrom"
+                      name="customFrom"
+                      placeholder="Enter departure city"
+                      value={newConveyance.from}
+                      onChange={(e) => handleConveyanceInputChange(e, "customFrom")}
+                      className="theme-form-input"
+                    />
+                  ) : (
+                    <select
+                      id="from"
+                      name="from"
+                      value={newConveyance.from}
+                      onChange={(e) => handleConveyanceInputChange(e)}
+                      className="theme-form-input"
+                    >
+                      <option value="">Select City</option>
+                      {COMMON_CITIES.map(city => (
+                        <option key={city} value={city}>{city}</option>
+                      ))}
+                      <option value="Other">Other (Enter manually)</option>
+                    </select>
+                  )}
+                </div>
+              </div>
+              
+              <div className="theme-form-col">
+                <div className="theme-form-group">
+                  <label htmlFor="to">To</label>
+                  {newConveyance.isCustomToCity ? (
+                    <input
+                      type="text"
+                      id="customTo"
+                      name="customTo"
+                      placeholder="Enter destination city"
+                      value={newConveyance.to}
+                      onChange={(e) => handleConveyanceInputChange(e, "customTo")}
+                      className="theme-form-input"
+                    />
+                  ) : (
+                    <select
+                      id="to"
+                      name="to"
+                      value={newConveyance.to}
+                      onChange={(e) => handleConveyanceInputChange(e)}
+                      className="theme-form-input"
+                    >
+                      <option value="">Select City</option>
+                      {COMMON_CITIES.map(city => (
+                        <option key={city} value={city}>{city}</option>
+                      ))}
+                      <option value="Other">Other (Enter manually)</option>
+                    </select>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="theme-form-row">
+              <div className="theme-form-col">
+                <div className="theme-form-group">
+                  <label htmlFor="mode">Mode of Travel</label>
+                  {newConveyance.isCustomMode ? (
+                    <input
+                      type="text"
+                      id="customMode"
+                      name="customMode"
+                      placeholder="Enter mode of travel"
+                      value={newConveyance.mode}
+                      onChange={(e) => handleConveyanceInputChange(e, "customMode")}
+                      className="theme-form-input"
+                    />
+                  ) : (
+                    <select
+                      id="mode"
+                      name="mode"
+                      value={newConveyance.mode}
+                      onChange={(e) => handleConveyanceInputChange(e)}
+                      className="theme-form-input"
+                    >
+                      <option value="">Select Mode</option>
+                      {TRAVEL_MODES.map(mode => (
+                        <option key={mode} value={mode}>{mode}</option>
+                      ))}
+                      <option value="Other">Other (Enter manually)</option>
+                    </select>
+                  )}
+                </div>
+              </div>
+              
+              <div className="theme-form-col">
+                <div className="theme-form-group">
+                  <label htmlFor="amount">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <MoneyIcon color="var(--theme-text-secondary)" size={16} />
+                      <span>Amount*</span>
+                    </div>
+                  </label>
+                  <input
+                    type="number"
+                    id="amount"
+                    name="amount"
+                    value={newConveyance.amount}
+                    onChange={(e) => handleConveyanceInputChange(e)}
+                    required
+                    className="theme-form-input"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="theme-form-group">
+              <label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <FileIcon color="var(--theme-text-secondary)" size={16} />
+                  <span>Conveyance Bill Attachment</span>
+                </div>
+              </label>
+              <div className="theme-file-upload">
+                <label className="theme-file-label">
+                  <input
+                    type="file"
+                    onChange={handleConveyanceFileChange}
+                    style={{ display: 'none' }}
+                  />
+                  Choose File
+                </label>
+                {selectedConveyanceFileName && <span className="theme-file-name">{selectedConveyanceFileName}</span>}
+              </div>
+            </div>
+            
+            <div className="theme-form-actions" style={{ marginTop: '16px' }}>
+              <button
+                onClick={() => setShowConveyanceForm(false)}
+                className="theme-btn theme-btn-outline"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddConveyance}
+                className="theme-btn theme-btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                disabled={conveyanceLoading}
+              >
+                <PlusIcon size={14} />
+                {conveyanceLoading ? 'Adding...' : 'Add Conveyance'}
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {conveyances.length > 0 && (
+          <table className="theme-table">
             <thead>
               <tr>
                 <th>Date</th>
@@ -427,23 +756,37 @@ const BillDetails = () => {
                 <th>To</th>
                 <th>Mode</th>
                 <th>Amount</th>
-                <th>Action</th>
+                <th>Bill</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {conveniences.map(conv => (
-                <tr key={conv.id}>
-                  <td>{conv.date}</td>
-                  <td>{conv.place}</td>
-                  <td>{conv.from}</td>
-                  <td>{conv.to}</td>
-                  <td>{conv.mode}</td>
-                  <td>Rs. {Number(conv.amount).toLocaleString('en-IN')}</td>
+              {conveyances.map((conveyance) => (
+                <tr key={conveyance.id}>
+                  <td>{conveyance.date}</td>
+                  <td>{conveyance.place}</td>
+                  <td>{conveyance.from}</td>
+                  <td>{conveyance.to}</td>
+                  <td>{conveyance.mode}</td>
+                  <td>₹{parseFloat(conveyance.amount).toFixed(2)}</td>
                   <td>
-                    <button 
-                      className={styles.deleteButton}
-                      onClick={() => handleDeleteConvenience(conv.id)}
+                    {conveyance.fileUrl && (
+                      <a 
+                        href="#" 
+                        onClick={(e) => handleViewBill(conveyance.fileUrl, e)} 
+                        className="theme-link"
+                      >
+                        View Bill
+                      </a>
+                    )}
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => handleDeleteConveyance(conveyance.id)}
+                      className="theme-btn theme-btn-accent"
+                      style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
                     >
+                      <TrashIcon size={14} />
                       Delete
                     </button>
                   </td>
@@ -454,27 +797,39 @@ const BillDetails = () => {
         )}
       </div>
       
-      <div className={styles.summary}>
-        <div className={styles.summaryItem}>
-          <span>Total Bill Amount:</span>
-          <span>Rs. {totalAmount.toLocaleString('en-IN')}</span>
+      <div className="theme-card">
+        <div className="theme-card-header">
+          <h2 className="theme-card-title">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MoneyIcon color="var(--theme-primary)" size={18} />
+              <span>Summary</span>
+            </div>
+          </h2>
         </div>
-        <div className={styles.summaryItem}>
-          <span>Total Convenience Amount:</span>
-          <span>Rs. {totalConvenienceAmount.toLocaleString('en-IN')}</span>
-        </div>
-        <div className={styles.summaryItem}>
-          <span>Grand Total:</span>
-          <span>Rs. {(totalAmount + totalConvenienceAmount).toLocaleString('en-IN')}</span>
+        <div className="theme-summary">
+          <div className="theme-summary-item">
+            <span className="theme-summary-label">Total Bill Amount:</span>
+            <span className="theme-summary-value">₹{parseFloat(totalAmount).toFixed(2)}</span>
+          </div>
+          <div className="theme-summary-item">
+            <span className="theme-summary-label">Total Conveyance Amount:</span>
+            <span className="theme-summary-value">₹{parseFloat(totalConveyanceAmount).toFixed(2)}</span>
+          </div>
+          <div className="theme-summary-item">
+            <span className="theme-summary-label">Grand Total:</span>
+            <span className="theme-summary-total">₹{parseFloat(totalAmount + totalConveyanceAmount).toFixed(2)}</span>
+          </div>
         </div>
       </div>
       
-      <div className={styles.actions}>
+      <div className="theme-form-actions">
         <button 
-          className={styles.nextButton}
-          onClick={handleSubmit}
+          onClick={handleSubmit} 
+          className="theme-btn theme-btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
         >
-          Save & Next
+          <span>Next: Add Travel Expenses</span>
+          <ArrowRightIcon size={16} />
         </button>
       </div>
     </div>

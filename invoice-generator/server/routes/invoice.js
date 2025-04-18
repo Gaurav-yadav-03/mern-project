@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Invoice = require('../models/Invoice');
-const mongoose = require('mongoose');
 
 // Utility function to handle MongoDB operations with timeout
 const handleMongoOperation = async (operation) => {
@@ -23,14 +22,9 @@ const handleMongoOperation = async (operation) => {
 // Create new invoice
 router.post('/', async (req, res) => {
   try {
-    // Enhanced validation for required fields
+    // Ensure userId is included in the invoice data
     if (!req.body.userId) {
       return res.status(400).json({ error: 'User ID is required' });
-    }
-
-    // Validate userId is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.body.userId)) {
-      return res.status(400).json({ error: 'Invalid User ID format' });
     }
     
     const invoice = new Invoice(req.body);
@@ -73,11 +67,6 @@ router.get('/user/:userId', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
     
-    // Validate userId is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: 'Invalid User ID format' });
-    }
-    
     const invoices = await handleMongoOperation(
       Invoice.find({ userId: userId }).sort({ createdAt: -1 })
     );
@@ -96,11 +85,6 @@ router.get('/user/:userId', async (req, res) => {
 // Get specific invoice
 router.get('/:id', async (req, res) => {
   try {
-    // Validate id is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid invoice ID format' });
-    }
-    
     const invoice = await handleMongoOperation(
       Invoice.findById(req.params.id)
     );
@@ -120,11 +104,6 @@ router.get('/:id', async (req, res) => {
 // Delete invoice
 router.delete('/:id', async (req, res) => {
   try {
-    // Validate id is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid invoice ID format' });
-    }
-    
     // Find the invoice first to check ownership
     const invoice = await handleMongoOperation(
       Invoice.findById(req.params.id)

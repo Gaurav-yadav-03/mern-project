@@ -1,27 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './BasicDetails.module.css';
+import '../theme.css';
+import { UserIcon, CalendarIcon, ListIcon, PlusIcon } from '../icons.jsx';
+
+// Common corporate departments
+const DEPARTMENTS = [
+  'Accounting',
+  'Administration',
+  'Business Development',
+  'Customer Service',
+  'Engineering',
+  'Finance',
+  'Human Resources',
+  'Information Technology',
+  'Legal',
+  'Marketing',
+  'Operations',
+  'Product Management',
+  'Quality Assurance',
+  'Research & Development',
+  'Sales',
+  'Security',
+  'Supply Chain'
+];
 
 const BasicDetails = () => {
   const navigate = useNavigate();
   
   // Clear all localStorage data when starting a new invoice
   useEffect(() => {
-    // Clear all invoice-related data
+    // Clear all localStorage data when starting a new invoice
     localStorage.removeItem('invoiceData');
     localStorage.removeItem('bills');
     localStorage.removeItem('expenses');
-    localStorage.removeItem('conveniences');
+    localStorage.removeItem('conveyances');
     localStorage.removeItem('dailyAllowance');
     localStorage.removeItem('totalBillAmount');
-    localStorage.removeItem('totalConvenienceAmount');
+    localStorage.removeItem('totalConveyanceAmount');
   }, []);
 
   const [formData, setFormData] = useState({
     employeeName: '',
     department: '',
     tourPeriod: '',
-    agendaItems: [{ agendaItem: '', timeSchedule: '', actionTaken: '' }]
+    agendaItems: [{ 
+      agendaItem: '', 
+      fromDate: '', 
+      toDate: '', 
+      actionTaken: '' 
+    }]
   });
 
   const handleChange = (e, index) => {
@@ -32,6 +60,12 @@ const BasicDetails = () => {
         ...updatedAgendaItems[index],
         [name]: value
       };
+      
+      // If fromDate changed, ensure toDate is not before fromDate
+      if (name === 'fromDate' && updatedAgendaItems[index].toDate && updatedAgendaItems[index].toDate < value) {
+        updatedAgendaItems[index].toDate = value;
+      }
+      
       setFormData({
         ...formData,
         agendaItems: updatedAgendaItems
@@ -47,7 +81,12 @@ const BasicDetails = () => {
   const addAgendaItem = () => {
     setFormData({
       ...formData,
-      agendaItems: [...formData.agendaItems, { agendaItem: '', timeSchedule: '', actionTaken: '' }]
+      agendaItems: [...formData.agendaItems, { 
+        agendaItem: '', 
+        fromDate: '', 
+        toDate: '', 
+        actionTaken: '' 
+      }]
     });
   };
 
@@ -80,64 +119,90 @@ const BasicDetails = () => {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
+    <div className="theme-form-container">
+      <div className="theme-form-header">
         <h1>Basic Details</h1>
       </div>
       
-      <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.section}>
-          <h2>Employee Details</h2>
-          <div className={styles.formGroup}>
-            <label htmlFor="employeeName">Employee Name</label>
-            <input
-              type="text"
-              id="employeeName"
-              name="employeeName"
-              value={formData.employeeName}
-              onChange={handleChange}
-              required
-              placeholder="Enter employee name"
-            />
+      <form onSubmit={handleSubmit} className="theme-form-content">
+        <div className="theme-section">
+          <div className="theme-section-header">
+            <span className="theme-section-icon"><UserIcon color="var(--theme-primary)" size={20} /></span>
+            <h2>Employee Details</h2>
+          </div>
+          <div className="theme-form-row">
+            <div className="theme-form-col">
+              <div className="theme-form-group">
+                <label htmlFor="employeeName">Employee Name</label>
+                <input
+                  type="text"
+                  id="employeeName"
+                  name="employeeName"
+                  value={formData.employeeName}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter employee name"
+                  className="theme-form-input"
+                />
+              </div>
+            </div>
+          
+            <div className="theme-form-col">
+              <div className="theme-form-group">
+                <label htmlFor="department">Department</label>
+                <select
+                  id="department"
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  required
+                  className="theme-form-input"
+                >
+                  <option value="" disabled>Select a department</option>
+                  {DEPARTMENTS.map((dept) => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
           </div>
           
-          <div className={styles.formGroup}>
-            <label htmlFor="department">Department</label>
+          <div className="theme-form-group">
+            <label htmlFor="tourPeriod">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CalendarIcon color="var(--theme-text-secondary)" size={16} />
+                <span>Period of Tour (Days)</span>
+              </div>
+            </label>
             <input
-              type="text"
-              id="department"
-              name="department"
-              value={formData.department}
-              onChange={handleChange}
-              required
-              placeholder="Enter department"
-            />
-          </div>
-          
-          <div className={styles.formGroup}>
-            <label htmlFor="tourPeriod">Period of Tour</label>
-            <input
-              type="text"
+              type="number"
               id="tourPeriod"
               name="tourPeriod"
               value={formData.tourPeriod}
               onChange={handleChange}
               required
-              placeholder="Enter tour period"
+              min="1"
+              placeholder="Enter number of days"
+              className="theme-form-input"
             />
           </div>
         </div>
 
-        <div className={styles.section}>
-          <h2>Agenda Items</h2>
-          <table className={styles.table}>
+        <div className="theme-section">
+          <div className="theme-section-header">
+            <span className="theme-section-icon"><ListIcon color="var(--theme-primary)" size={20} /></span>
+            <h2>Agenda Items</h2>
+          </div>
+          <table className="theme-table">
             <thead>
               <tr>
-                <th>Sr. No.</th>
-                <th>Agenda Item(s)*</th>
-                <th>Time Schedule</th>
-                <th>Record note of Action taken**</th>
-                <th>Action</th>
+                <th style={{ width: '50px' }}>Sr. No.</th>
+                <th>Agenda Item(s)</th>
+                <th>From Date</th>
+                <th>To Date</th>
+                <th>Record note of Action taken</th>
+                <th style={{ width: '100px' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -156,12 +221,22 @@ const BasicDetails = () => {
                   </td>
                   <td>
                     <input
-                      type="text"
-                      name="timeSchedule"
-                      value={item.timeSchedule}
+                      type="date"
+                      name="fromDate"
+                      value={item.fromDate}
                       onChange={(e) => handleChange(e, index)}
                       required
-                      placeholder="Enter time schedule"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      name="toDate"
+                      value={item.toDate}
+                      onChange={(e) => handleChange(e, index)}
+                      min={item.fromDate || undefined}
+                      required
+                      disabled={!item.fromDate}
                     />
                   </td>
                   <td>
@@ -179,7 +254,7 @@ const BasicDetails = () => {
                       <button
                         type="button"
                         onClick={() => removeAgendaItem(index)}
-                        className={styles.removeButton}
+                        className="theme-btn theme-btn-accent"
                       >
                         Remove
                       </button>
@@ -193,14 +268,16 @@ const BasicDetails = () => {
           <button
             type="button"
             onClick={addAgendaItem}
-            className={styles.addButton}
+            className="theme-btn theme-btn-secondary"
+            style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}
           >
+            <PlusIcon size={16} />
             Add Agenda Item
           </button>
         </div>
 
-        <div className={styles.actions}>
-          <button type="submit" className={styles.submitButton}>
+        <div className="theme-form-actions">
+          <button type="submit" className="theme-btn theme-btn-primary">
             Next
           </button>
         </div>

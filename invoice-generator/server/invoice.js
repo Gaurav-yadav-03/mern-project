@@ -81,10 +81,20 @@ async function generateInvoice(data) {
         doc.fontSize(12).font('Helvetica');
         doc.text(`Name: ${data.employee?.employeeName || 'N/A'}`);
         doc.text(`Department: ${data.employee?.department || 'N/A'}`);
-        doc.text(`Destination: ${data.employee?.destination || 'N/A'}`);
-        doc.text(`Purpose: ${data.purpose || 'N/A'}`);
-        doc.text(`From Date: ${data.employee?.fromDate || 'N/A'}`);
-        doc.text(`To Date: ${data.employee?.toDate || 'N/A'}`);
+        
+        // Get destination from tour summary data - use the 'to' field from first tour detail
+        const destination = data.tourSummary?.tourDetails?.[0]?.to || 'N/A';
+        doc.text(`Destination: ${destination}`);
+        
+        // Get purpose from first agenda item's description
+        const purpose = data.agendaItems?.[0]?.agendaItem || 'N/A';
+        doc.text(`Purpose: ${purpose}`);
+        
+        // Use proper date fields based on tour summary data
+        const fromDate = data.tourSummary?.tourDetails?.[0]?.fromDate || 'N/A';
+        const toDate = data.tourSummary?.tourDetails?.[0]?.toDate || 'N/A';
+        doc.text(`From Date: ${fromDate}`);
+        doc.text(`To Date: ${toDate}`);
 
         // Force new page for Tour Summary
         doc.addPage();
@@ -97,6 +107,12 @@ async function generateInvoice(data) {
         doc.fontSize(20).font('Helvetica-Bold').text('Bill Details', { align: 'center' });
         doc.moveDown(2);
         generateBillDetailsTable(doc, data, drawTableLine, drawTableBorders);
+
+        // Force new page for Conveyance Details
+        doc.addPage();
+        doc.fontSize(20).font('Helvetica-Bold').text('Conveyance Details', { align: 'center' });
+        doc.moveDown(2);
+        generateConveyanceTable(doc, data, drawTableLine, drawTableBorders);
 
         // Force new page for Journey Statement
         doc.addPage();
@@ -228,12 +244,18 @@ function generateTourSummaryTable(doc, data, drawTableLine, drawTableBorders) {
   let y = startY + 30;
   doc.fontSize(10).font('Helvetica');
   tourDetails.forEach(item => {
+    // Get the matching agenda item for this tour detail if available
+    const matchingAgendaItem = data.agendaItems?.find(agenda => 
+      agenda.fromDate === item.fromDate && agenda.toDate === item.toDate
+    ) || { agendaItem: '' };
+    
     const rowData = [
       item.fromDate || 'N/A',
       item.modeOfTravel || 'N/A',
       item.from || 'N/A',
       item.to || 'N/A',
-      item.purpose || 'N/A'
+      // Use agenda item text if available, otherwise fallback to 'purpose' or 'N/A'
+      matchingAgendaItem.agendaItem || item.purpose || item.majorPurpose || 'N/A'
     ];
     
     rowData.forEach((text, i) => {
@@ -269,6 +291,42 @@ function generateBillDetailsTable(doc, data, drawTableLine, drawTableBorders) {
       bill.billNo || 'N/A',
       bill.billDate || 'N/A',
       `₹${Number(bill.amount || 0).toLocaleString('en-IN')}`
+    ];
+    
+    rowData.forEach((text, i) => {
+      const x = 50 + (i * ((doc.page.width - 100) / 5));
+      doc.text(text, x + 5, y + 5, { width: ((doc.page.width - 100) / 5) - 10 });
+    });
+    
+    y += 30;
+  });
+}
+
+function generateConveyanceTable(doc, data, drawTableLine, drawTableBorders) {
+  const conveyances = data.conveyances || [];
+  const startY = doc.y + 20;
+  const endY = startY + ((conveyances.length || 1) * 30) + 30;
+  
+  // Draw table with borders
+  drawTableBorders(doc, startY, endY, 5);
+  
+  // Headers
+  doc.fontSize(10).font('Helvetica-Bold');
+  ['Date', 'Place', 'From', 'To', 'Amount'].forEach((header, i) => {
+    const x = 50 + (i * ((doc.page.width - 100) / 5));
+    doc.text(header, x + 5, startY + 5, { width: ((doc.page.width - 100) / 5) - 10 });
+  });
+
+  // Data rows
+  let y = startY + 30;
+  doc.fontSize(10).font('Helvetica');
+  conveyances.forEach(conveyance => {
+    const rowData = [
+      conveyance.date || 'N/A',
+      conveyance.place || 'N/A',
+      conveyance.from || 'N/A',
+      conveyance.to || 'N/A',
+      `₹${Number(conveyance.amount || 0).toLocaleString('en-IN')}`
     ];
     
     rowData.forEach((text, i) => {
@@ -317,12 +375,13 @@ function generateJourneyStatement(doc, data, drawTableLine, drawTableBorders) {
 
 function generateFinalSummary(doc, data) {
   try {
-    const { dailyAllowance, totalBillAmount, totalExpenses, grandTotal } = data;
+    const { dailyAllowance, totalBillAmount, totalConveyanceAmount, totalExpenses, grandTotal } = data;
     
     // Set default values for empty fields
     const daDays = dailyAllowance?.daDays || '0';
     const daAmount = dailyAllowance?.daAmount || '0';
     const billTotal = totalBillAmount || 0;
+    const conveyanceTotal = totalConveyanceAmount || 0;
     const expenseTotal = totalExpenses || 0;
     
     // Format currency values
@@ -334,7 +393,7 @@ function generateFinalSummary(doc, data) {
     
     // Calculate available width
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-    const labelWidth = 150;
+    const labelWidth = 250; // Increased to accommodate longer labels
     const valueWidth = pageWidth - labelWidth;
     
     // Draw section heading
@@ -356,20 +415,31 @@ function generateFinalSummary(doc, data) {
       if (isTotal) doc.font('Helvetica');
     };
     
-    // Add rows
-    addRow('Total Bill Amount:', formatter.format(billTotal));
-    addRow('Total Expenses:', formatter.format(expenseTotal));
+    // Add rows with consistent terminology and formatting
+    addRow('1. Total Hotel/Restaurant Bill Amount:', formatter.format(billTotal));
+    addRow('2. Total Conveyance Charges:', formatter.format(conveyanceTotal));
+    addRow('3. Total Travel Expenses:', formatter.format(expenseTotal));
     
     // Add daily allowance if present
     if (daDays && parseInt(daDays) > 0 && daAmount && parseInt(daAmount) > 0) {
-      addRow(`D.A. for ${daDays} days @ ${formatter.format(daAmount)} per day:`, formatter.format(daDays * daAmount));
+      addRow(`4. Daily Allowance (${daDays} days @ ${formatter.format(daAmount)}/day):`, formatter.format(daDays * daAmount));
     } else {
-      addRow('Daily Allowance:', formatter.format(0));
+      addRow('4. Daily Allowance:', formatter.format(0));
     }
     
     // Add grand total
     doc.moveDown(0.5);
-    addRow('GRAND TOTAL:', formatter.format(grandTotal || 0), true);
+    // Recalculate grand total to ensure it includes conveyance
+    const calculatedTotal = Number(billTotal) + Number(conveyanceTotal) + Number(expenseTotal) + 
+                          (Number(daDays) * Number(daAmount));
+    // Use provided grand total or calculate it
+    const finalTotal = grandTotal || calculatedTotal;
+    
+    // Draw a line before the grand total
+    doc.moveTo(doc.x, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).stroke();
+    doc.moveDown(0.3);
+    
+    addRow('GRAND TOTAL:', formatter.format(finalTotal), true);
     
     return doc.y;
   } catch (error) {

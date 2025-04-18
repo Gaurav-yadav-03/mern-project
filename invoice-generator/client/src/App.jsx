@@ -10,6 +10,7 @@ import GenerateInvoice from './pages/GenerateInvoice';
 import InvoiceHistory from './pages/InvoiceHistory';
 import Login from './pages/Login';
 import './App.css';
+import './theme.css';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import EditProfile from './pages/EditProfile';

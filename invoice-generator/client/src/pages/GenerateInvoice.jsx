@@ -74,6 +74,7 @@ const GenerateInvoice = () => {
         },
         bills: Array.isArray(invoiceData.bills) ? [...invoiceData.bills] : [],
         expenses: Array.isArray(invoiceData.expenses) ? [...invoiceData.expenses] : [],
+        conveyances: Array.isArray(invoiceData.conveyances) ? [...invoiceData.conveyances] : [],
         dailyAllowance: {
           daDays: invoiceData.dailyAllowance?.daDays || 0,
           daAmount: invoiceData.dailyAllowance?.daAmount || 0,
@@ -84,6 +85,7 @@ const GenerateInvoice = () => {
         },
         totalBillAmount: parseFloat(invoiceData.totalBillAmount || 0),
         totalExpenses: parseFloat(invoiceData.totalExpenses || 0),
+        totalConveyanceAmount: parseFloat(invoiceData.totalConveyanceAmount || 0),
         totalAmount: parseFloat(invoiceData.grandTotal || 0) // Use totalAmount to match Invoice model
       };
 
@@ -142,10 +144,10 @@ const GenerateInvoice = () => {
         localStorage.removeItem('invoiceData');
         localStorage.removeItem('bills');
         localStorage.removeItem('expenses');
-        localStorage.removeItem('conveniences');
+        localStorage.removeItem('conveyances');
         localStorage.removeItem('dailyAllowance');
         localStorage.removeItem('totalBillAmount');
-        localStorage.removeItem('totalConvenienceAmount');
+        localStorage.removeItem('totalConveyanceAmount');
         
         // Success message
         toast.success('Invoice generated successfully!');
@@ -225,6 +227,19 @@ const GenerateInvoice = () => {
     }
   };
   
+  const resetForm = () => {
+    // Clear all localStorage data
+    localStorage.removeItem('invoiceData');
+    localStorage.removeItem('bills');
+    localStorage.removeItem('expenses');
+    localStorage.removeItem('conveyances');
+    localStorage.removeItem('dailyAllowance');
+    localStorage.removeItem('totalBillAmount');
+    localStorage.removeItem('totalConveyanceAmount');
+    
+    // Redirect to home page
+    navigate('/');
+  };
 
   if (!invoiceData) {
     return <div>Loading...</div>;
@@ -343,6 +358,36 @@ const GenerateInvoice = () => {
           <p className={styles.total}>Total Expenses: ₹{Number(invoiceData.totalExpenses || 0).toLocaleString('en-IN')}</p>
         </div>
 
+        {/* Conveyance Charges Section */}
+        <div className={styles.section}>
+          <h3>Conveyance Charges</h3>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Place</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Mode</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoiceData.conveyances?.map((conveyance, index) => (
+                <tr key={index}>
+                  <td>{conveyance.date || 'N/A'}</td>
+                  <td>{conveyance.place || 'N/A'}</td>
+                  <td>{conveyance.from || 'N/A'}</td>
+                  <td>{conveyance.to || 'N/A'}</td>
+                  <td>{conveyance.mode || 'N/A'}</td>
+                  <td>₹{Number(conveyance.amount || 0).toLocaleString('en-IN')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className={styles.total}>Total Conveyance: ₹{Number(invoiceData.totalConveyanceAmount || 0).toLocaleString('en-IN')}</p>
+        </div>
+
         <div className={styles.section}>
           <h3>Daily Allowance Details</h3>
           <p>On For: {invoiceData.dailyAllowance?.onFor || 'N/A'}</p>
@@ -355,6 +400,7 @@ const GenerateInvoice = () => {
           <h3>Total Summary</h3>
           <p>Total Bill Amount: ₹{Number(invoiceData.totalBillAmount || 0).toLocaleString('en-IN')}</p>
           <p>Total Expenses: ₹{Number(invoiceData.totalExpenses || 0).toLocaleString('en-IN')}</p>
+          <p>Total Conveyance: ₹{Number(invoiceData.totalConveyanceAmount || 0).toLocaleString('en-IN')}</p>
           <p>Total D.A. Amount: ₹{Number(invoiceData.dailyAllowance?.daAmount || 0).toLocaleString('en-IN')}</p>
           <p className={styles.grandTotal}>Grand Total: ₹{Number(invoiceData.grandTotal || 0).toLocaleString('en-IN')}</p>
         </div>
