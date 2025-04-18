@@ -34,13 +34,17 @@ router.get('/google/callback', (req, res, next) => {
         return res.redirect('http://localhost:5173/login?error=login_failed');
       }
       
-      // Set user data in session
+      // Set user data in session with correct userId field
       req.session.user = {
-        id: user._id,
+        _id: user._id,  // This is the key change - use _id instead of id
         name: user.name,
         email: user.email,
-        picture: user.picture
+        picture: user.picture,
+        isAdmin: user.isAdmin || false
       };
+      
+      // Log session data for debugging
+      console.log('Session user data set:', req.session.user);
       
       // Save session before redirect
       req.session.save((err) => {
@@ -48,6 +52,7 @@ router.get('/google/callback', (req, res, next) => {
           console.error('Session save error:', err);
           return res.redirect('http://localhost:5173/login?error=session_error');
         }
+        console.log('Session saved successfully, redirecting to home page');
         return res.redirect('http://localhost:5173');
       });
     });
@@ -56,18 +61,36 @@ router.get('/google/callback', (req, res, next) => {
 
 // Status check endpoint
 router.get('/status', (req, res) => {
+  console.log('Auth status check - Session:', req.session);
+  console.log('Auth status check - isAuthenticated:', req.isAuthenticated());
+  console.log('Auth status check - user:', req.user);
+  console.log('Auth status check - session user:', req.session?.user);
+
+  // Check if user is authenticated through Passport
   if (req.isAuthenticated() && req.user) {
+    console.log('User is authenticated via Passport');
     res.json({
       isAuthenticated: true,
       user: {
-        id: req.user._id,
+        _id: req.user._id,  // Use _id consistently
         name: req.user.name,
         email: req.user.email,
         picture: req.user.picture || null,
-        isAdmin: req.user.isAdmin || false // Include isAdmin flag
+        isAdmin: req.user.isAdmin || false
       }
     });
-  } else {
+  } 
+  // Fallback to session-based authentication
+  else if (req.session && req.session.user) {
+    console.log('User is authenticated via session');
+    res.json({
+      isAuthenticated: true,
+      user: req.session.user
+    });
+  } 
+  // Not authenticated
+  else {
+    console.log('User is not authenticated');
     res.json({ isAuthenticated: false, user: null });
   }
 });
@@ -132,9 +155,9 @@ router.post('/signup', async (req, res) => {
         return res.status(500).json({ error: 'Login failed after signup' });
       }
       
-      // Set user data in session
+      // Set user data in session with _id instead of id
       req.session.user = {
-        id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email
       };
@@ -145,7 +168,13 @@ router.post('/signup', async (req, res) => {
           console.error('Session save error:', err);
           return res.status(500).json({ error: 'Session save failed' });
         }
-        res.json({ user: req.session.user });
+        res.json({ 
+          user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email
+          }
+        });
       });
     });
   } catch (error) {
@@ -162,7 +191,6 @@ router.get('/verify', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-module.exports = router;
 
 // In your login route handler
 router.post('/login', async (req, res) => {
@@ -195,9 +223,9 @@ router.post('/login', async (req, res) => {
         return res.status(500).json({ error: 'Login failed' });
       }
       
-      // Set user data in session including isAdmin flag
+      // Set user data in session including isAdmin flag with _id instead of id
       req.session.user = {
-        id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         picture: user.picture,
@@ -211,10 +239,10 @@ router.post('/login', async (req, res) => {
           return res.status(500).json({ error: 'Session save failed' });
         }
         
-        // Return user info with isAdmin flag
+        // Return user info with isAdmin flag and _id instead of id
         res.json({ 
           user: {
-            id: user._id,
+            _id: user._id,
             name: user.name,
             email: user.email,
             picture: user.picture,
@@ -228,3 +256,5 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+module.exports = router;

@@ -108,208 +108,211 @@ app.get('/', (req, res) => {
 
 // Invoice generation endpoint
 app.post('/generate-invoice', async (req, res) => {
+  console.log('=== Generating Invoice ===');
+  
   try {
-    console.log('=== Invoice Generation Request Debug ===');
-    console.log('Request body type:', typeof req.body);
+    const data = req.body;
     
-    // Validate required fields
-    if (!req.body) {
-      return res.status(400).json({ error: 'No data provided' });
-    }
-
-    // Validate required nested objects
-    if (!req.body.employee) {
-      return res.status(400).json({ error: 'Employee details are required' });
-    }
-
-    if (!req.body.tourSummary || !req.body.tourSummary.tourDetails) {
-      return res.status(400).json({ error: 'Tour summary details are required' });
-    }
-
-    // Log important data before generation
-    console.log('Tour Summary:', {
-      hasDetails: Boolean(req.body.tourSummary?.tourDetails),
-      detailsLength: req.body.tourSummary?.tourDetails?.length
+    // Log crucial parts of the data for debugging
+    console.log('Generation request received:', {
+      userId: data.userId,
+      hasEmployee: !!data.employee,
+      hasTourSummary: !!data.tourSummary,
+      hasBills: Array.isArray(data.bills),
+      hasExpenses: Array.isArray(data.expenses)
     });
-    
+
+    // Basic validation only - detailed validation happens in the validation endpoint
+    if (!data.userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required data: user ID is required'
+      });
+    }
+
+    if (!data.employee || !data.tourSummary) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required data: employee and tour summary are required'
+      });
+    }
+
+    // Generate invoice PDF
     try {
-      // Generate the invoice PDF
-      const filePath = await generateInvoice(req.body);
+      const pdfPath = await generateInvoice(data);
+      console.log('Invoice generated at:', pdfPath);
       
       // Check if file exists
-      if (!fs.existsSync(filePath)) {
-        return res.status(500).json({ error: 'Generated invoice file not found' });
+      if (!fs.existsSync(pdfPath)) {
+        console.error('Generated PDF file not found at path:', pdfPath);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to generate PDF file'
+        });
       }
-
-      console.log('PDF generated successfully, sending to client:', filePath);
       
-      // Set appropriate headers to force download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename=invoice.pdf');
-      
-      // Stream the file directly to the client
-      const fileStream = fs.createReadStream(filePath);
-      
-      // Handle file streaming errors
-      fileStream.on('error', (err) => {
-        console.error('Error streaming file:', err);
-        if (!res.headersSent) {
-          res.status(500).json({ 
-            error: 'Failed to stream invoice file',
-            details: err.message
+      // Send the PDF file
+      res.download(pdfPath, `invoice_${Date.now()}.pdf`, (err) => {
+        if (err) {
+          console.error('Error sending PDF:', err);
+          return res.status(500).json({
+            success: false,
+            message: 'Error sending PDF',
+            error: err.message
           });
         }
+        
+        // Delete the file after sending
+        try {
+          fs.unlinkSync(pdfPath);
+          console.log('Temporary PDF file deleted:', pdfPath);
+        } catch (deleteErr) {
+          console.error('Error deleting temporary PDF file:', deleteErr);
+        }
       });
-      
-      // Clean up after streaming is complete
-      fileStream.on('end', () => {
-        console.log('File streaming completed, cleaning up');
-        fs.unlink(filePath, (unlinkErr) => {
-          if (unlinkErr) console.error('Error deleting file:', unlinkErr);
-        });
-      });
-      
-      // Pipe the file to the response
-      fileStream.pipe(res);
-      
-    } catch (genError) {
-      console.error('Error in invoice generation:', genError);
-      return res.status(500).json({ 
-        error: 'Failed to generate invoice',
-        details: genError.message,
-        stack: process.env.NODE_ENV === 'development' ? genError.stack : undefined
+    } catch (pdfError) {
+      console.error('Error generating PDF:', pdfError);
+      return res.status(500).json({
+        success: false,
+        message: 'Error generating PDF invoice',
+        error: pdfError.message
       });
     }
   } catch (error) {
-    console.error('Error in invoice generation endpoint:', error);
-    return res.status(500).json({ 
-      error: 'Failed to process invoice request',
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    console.error('Error in /generate-invoice endpoint:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
     });
   }
 });
 
-// Validation endpoint for invoice generation
+// Validation endpoint
 app.post('/generate-invoice/validate', async (req, res) => {
+  console.log('=== Validating Invoice Data ===');
+  
   try {
-    console.log('=== Validation Request Debug ===');
-    console.log('Request body type:', typeof req.body);
-    console.log('Request body keys:', Object.keys(req.body));
+    const data = req.body;
     
-    // Check if request body exists and is not empty
-    if (!req.body || Object.keys(req.body).length === 0) {
-      console.error('Empty request body detected');
-      return res.status(400).json({
-        error: 'Validation failed',
-        details: 'No data provided',
-        debug: { bodyType: typeof req.body, keys: Object.keys(req.body) }
-      });
-    }
-
-    const validationErrors = [];
-
-    // Validate employee details
-    console.log('Employee validation:', {
-      exists: Boolean(req.body.employee),
-      name: req.body.employee?.employeeName,
-      department: req.body.employee?.department
+    // Log crucial parts of the data for debugging
+    console.log('Validation request received:', {
+      userId: data.userId,
+      hasEmployee: !!data.employee,
+      hasTourSummary: !!data.tourSummary,
+      hasBills: Array.isArray(data.bills),
+      hasExpenses: Array.isArray(data.expenses),
+      billsLength: data.bills?.length,
+      expensesLength: data.expenses?.length,
+      hasDailyAllowance: !!data.dailyAllowance
     });
-    
-    if (!req.body.employee) {
-      validationErrors.push('Employee details are required');
-    } else {
-      const { employee } = req.body;
-      if (!employee.employeeName) validationErrors.push('Employee name is required');
-      if (!employee.department) validationErrors.push('Department is required');
-    }
 
-    // Validate tour summary
-    console.log('Tour Summary validation:', {
-      exists: Boolean(req.body.tourSummary),
-      hasDetails: Boolean(req.body.tourSummary?.tourDetails),
-      detailsLength: req.body.tourSummary?.tourDetails?.length
-    });
+    // More detailed checks
+    const errors = [];
     
-    if (!req.body.tourSummary || !req.body.tourSummary.tourDetails) {
-      validationErrors.push('Tour summary details are required');
+    // Check userId
+    if (!data.userId) {
+      errors.push('User ID is required');
+    }
+    
+    // Check employee data
+    if (!data.employee) {
+      errors.push('Employee data is missing');
     } else {
-      const { tourDetails } = req.body.tourSummary;
-      if (!Array.isArray(tourDetails)) {
-        validationErrors.push('Tour details must be an array');
-      } else if (tourDetails.length === 0) {
-        validationErrors.push('At least one tour detail is required');
+      if (!data.employee.employeeName) errors.push('Employee name is required');
+      if (!data.employee.department) errors.push('Department is required');
+      if (!data.employee.tourPeriod) errors.push('Tour period is required');
+    }
+    
+    // Check tour summary data
+    if (!data.tourSummary) {
+      errors.push('Tour summary is missing');
+    } else {
+      if (!data.tourSummary.tourDetails || !Array.isArray(data.tourSummary.tourDetails)) {
+        errors.push('Tour details should be an array');
+        console.log('Tour summary structure:', JSON.stringify(data.tourSummary, null, 2));
+      } else if (data.tourSummary.tourDetails.length === 0) {
+        errors.push('Tour details array is empty');
       } else {
-        tourDetails.forEach((detail, index) => {
-          const missingFields = [];
-          if (!detail.fromDate) missingFields.push('From date');
-          if (!detail.toDate) missingFields.push('To date');
-          if (!detail.from) missingFields.push('From location');
-          if (!detail.to) missingFields.push('To location');
-          
-          if (missingFields.length > 0) {
-            validationErrors.push(`Tour detail ${index + 1} missing: ${missingFields.join(', ')}`);
-          }
-        });
+        // Log the first tour detail for debugging
+        console.log('First tour detail:', JSON.stringify(data.tourSummary.tourDetails[0], null, 2));
       }
     }
-
-    // Validate daily allowance if present
-    console.log('Daily Allowance validation:', {
-      exists: Boolean(req.body.dailyAllowance),
-      daDays: req.body.dailyAllowance?.daDays,
-      daAmount: req.body.dailyAllowance?.daAmount
-    });
-
-    if (req.body.dailyAllowance) {
-      const { dailyAllowance } = req.body;
-      const hasAnyValue = Object.values(dailyAllowance).some(value => 
-        value && value.toString().trim() !== '' && value !== '0' && value !== 0
-      );
+    
+    // Check bills
+    if (!Array.isArray(data.bills)) {
+      errors.push('Bills should be an array');
+      console.log('Bills data type:', typeof data.bills);
+    } else if (data.bills.length === 0) {
+      console.log('Bills array is empty');
+      // Optional validation - may not be required
+      // errors.push('At least one bill is required');
+    } else {
+      // Log the first bill for debugging
+      console.log('First bill:', JSON.stringify(data.bills[0], null, 2));
+    }
+    
+    // Check expenses
+    if (!Array.isArray(data.expenses)) {
+      errors.push('Expenses should be an array');
+      console.log('Expenses data type:', typeof data.expenses);
+    } else if (data.expenses.length === 0) {
+      console.log('Expenses array is empty');
+      // Optional validation - may not be required
+      // errors.push('At least one expense is required');
+    } else {
+      // Log the first expense for debugging
+      console.log('First expense:', JSON.stringify(data.expenses[0], null, 2));
+    }
+    
+    // Check daily allowance
+    if (!data.dailyAllowance) {
+      errors.push('Daily allowance data is missing');
+    } else {
+      if (isNaN(data.dailyAllowance.totalDays)) errors.push('Total days should be a number');
+      if (isNaN(data.dailyAllowance.ratePerDay)) errors.push('Rate per day should be a number');
       
-      if (hasAnyValue) {
-        if (!dailyAllowance.daDays || dailyAllowance.daDays.toString().trim() === '') {
-          validationErrors.push('Daily Allowance: Number of days is required');
-        }
-        if (!dailyAllowance.daAmount || dailyAllowance.daAmount.toString().trim() === '') {
-          validationErrors.push('Daily Allowance: Amount is required');
-        }
-      }
+      // Log the daily allowance data
+      console.log('Daily allowance:', JSON.stringify(data.dailyAllowance, null, 2));
     }
-
-    // Check if there are any validation errors
-    if (validationErrors.length > 0) {
-      console.error('Validation errors found:', validationErrors);
+    
+    // Check total amounts
+    if (isNaN(data.totalBillAmount)) {
+      console.log('Total bill amount is not a number:', data.totalBillAmount);
+      errors.push('Total bill amount should be a number');
+    }
+    
+    if (isNaN(data.totalExpenses)) {
+      console.log('Total expenses is not a number:', data.totalExpenses);
+      errors.push('Total expenses should be a number');
+    }
+    
+    if (isNaN(data.totalAmount)) {
+      console.log('Total amount is not a number:', data.totalAmount);
+      errors.push('Total amount should be a number');
+    }
+    
+    // Return validation result
+    if (errors.length > 0) {
+      console.log('Validation failed with errors:', errors);
       return res.status(400).json({
-        error: 'Validation failed',
-        details: validationErrors.join('; '),
-        validationErrors: validationErrors,
-        debug: {
-          employee: req.body.employee,
-          tourSummary: {
-            exists: Boolean(req.body.tourSummary),
-            hasDetails: Boolean(req.body.tourSummary?.tourDetails),
-            detailsLength: req.body.tourSummary?.tourDetails?.length
-          },
-          dailyAllowance: {
-            exists: Boolean(req.body.dailyAllowance),
-            daDays: req.body.dailyAllowance?.daDays,
-            daAmount: req.body.dailyAllowance?.daAmount
-          }
-        }
+        success: false,
+        message: 'Validation failed',
+        errors: errors
       });
     }
-
-    // If all validations pass
+    
     console.log('Validation successful');
-    res.json({ message: 'Data validation successful' });
-
+    return res.status(200).json({
+      success: true,
+      message: 'Data validated successfully'
+    });
   } catch (error) {
-    console.error('Validation error:', error);
-    res.status(500).json({
-      error: 'Validation failed',
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    console.error('Error during validation:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during validation',
+      error: error.message
     });
   }
 });

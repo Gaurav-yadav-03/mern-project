@@ -2,6 +2,28 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/toursummary.css';
 
+// Define common mode of travel options
+const TRAVEL_MODES = ['Car', 'Bike', 'Taxi', 'Bus', 'Train', 'Flight', 'Metro', 'Other'];
+
+// Define common Indian cities
+const COMMON_CITIES = [
+  'Delhi',
+  'Mumbai',
+  'Bangalore',
+  'Chennai',
+  'Kolkata',
+  'Hyderabad',
+  'Pune',
+  'Ahmedabad',
+  'Jaipur',
+  'Lucknow',
+  'Chandigarh',
+  'Bhopal',
+  'Kochi',
+  'Guwahati',
+  'Patna'
+];
+
 function TourSummary() {
   const [formData, setFormData] = useState({
     employeeName: "",
@@ -14,9 +36,12 @@ function TourSummary() {
         modeOfTravel: "",
         from: "",
         to: "",
-        contactAddress: "",
         telephoneNo: "",
         majorPurpose: "",
+        // Track if custom options are selected
+        isCustomMode: false,
+        isCustomFromCity: false,
+        isCustomToCity: false
       },
     ],
   });
@@ -39,7 +64,64 @@ function TourSummary() {
   const handleChange = (e, index = null, field = null) => {
     if (index !== null && field) {
       const newTourDetails = [...formData.tourDetails];
+      
+      // Handle custom mode of travel input
+      if (field === "customModeOfTravel") {
+        newTourDetails[index].modeOfTravel = e.target.value;
+        setFormData({ ...formData, tourDetails: newTourDetails });
+        return;
+      }
+      
+      // Handle custom from city input
+      if (field === "customFrom") {
+        newTourDetails[index].from = e.target.value;
+        setFormData({ ...formData, tourDetails: newTourDetails });
+        return;
+      }
+      
+      // Handle custom to city input
+      if (field === "customTo") {
+        newTourDetails[index].to = e.target.value;
+        setFormData({ ...formData, tourDetails: newTourDetails });
+        return;
+      }
+      
+      // Handle telephone number - restrict to numbers only and max 10 digits
+      if (field === "telephoneNo") {
+        const value = e.target.value.replace(/\D/g, '');
+        if (value.length <= 10) {
+          // For first digit, only allow 6-9 (valid Indian mobile numbers)
+          if (value.length === 0 || value.length > 1 || /^[6-9]/.test(value)) {
+            newTourDetails[index][field] = value;
+          }
+        }
+        setFormData({ ...formData, tourDetails: newTourDetails });
+        return;
+      }
+      
       newTourDetails[index][field] = e.target.value;
+      
+      // If selecting "Other" for mode, set isCustomMode to true
+      if (field === "modeOfTravel" && e.target.value === "Other") {
+        newTourDetails[index].isCustomMode = true;
+      } else if (field === "modeOfTravel") {
+        newTourDetails[index].isCustomMode = false;
+      }
+      
+      // Handle custom city selection for "From"
+      if (field === "from" && e.target.value === "Other") {
+        newTourDetails[index].isCustomFromCity = true;
+      } else if (field === "from") {
+        newTourDetails[index].isCustomFromCity = false;
+      }
+      
+      // Handle custom city selection for "To"
+      if (field === "to" && e.target.value === "Other") {
+        newTourDetails[index].isCustomToCity = true;
+      } else if (field === "to") {
+        newTourDetails[index].isCustomToCity = false;
+      }
+      
       setFormData({ ...formData, tourDetails: newTourDetails });
     } else {
       setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -57,9 +139,11 @@ function TourSummary() {
           modeOfTravel: "",
           from: "",
           to: "",
-          contactAddress: "",
           telephoneNo: "",
           majorPurpose: "",
+          isCustomMode: false,
+          isCustomFromCity: false,
+          isCustomToCity: false
         },
       ],
     });
@@ -77,14 +161,42 @@ function TourSummary() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate phone numbers before submission
+    for (let i = 0; i < formData.tourDetails.length; i++) {
+      const phone = formData.tourDetails[i].telephoneNo;
+      // Check if it's a valid Indian mobile number (10 digits starting with 6-9)
+      if (!/^[6-9]\d{9}$/.test(phone)) {
+        alert(`Tour Detail #${i+1}: Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9`);
+        return;
+      }
+    }
+    
+    // Clean up the data before saving by removing the tracking flags
+    const tourDetailsForStorage = formData.tourDetails.map(detail => {
+      const { isCustomMode, isCustomFromCity, isCustomToCity, ...cleanDetail } = detail;
+      return cleanDetail;
+    });
+    
+    const dataToStore = {
+      ...formData,
+      tourDetails: tourDetailsForStorage
+    };
+    
     const existingData = JSON.parse(localStorage.getItem("invoiceData") || "{}");
     const updatedData = {
       ...existingData,
-      tourSummary: formData,
+      tourSummary: dataToStore,
     };
     console.log('Saving tour summary data:', updatedData);
     localStorage.setItem("invoiceData", JSON.stringify(updatedData));
     navigate("/bill-details");
+  };
+
+  // Helper function to format phone number with +91 prefix
+  const formatPhoneNumber = (number) => {
+    if (!number) return '';
+    return `+91 ${number}`;
   };
 
   return (
@@ -171,57 +283,113 @@ function TourSummary() {
 
               <div className="form-group">
                 <label>Mode of Travel</label>
-                <input
-                  type="text"
-                  placeholder="e.g., Flight, Train"
-                  value={detail.modeOfTravel}
-                  onChange={(e) => handleChange(e, index, "modeOfTravel")}
-                  required
-                />
+                {detail.isCustomMode ? (
+                  <input
+                    type="text"
+                    placeholder="Enter mode of travel"
+                    value={detail.modeOfTravel}
+                    onChange={(e) => handleChange(e, index, "customModeOfTravel")}
+                    required
+                  />
+                ) : (
+                  <select
+                    value={detail.modeOfTravel}
+                    onChange={(e) => handleChange(e, index, "modeOfTravel")}
+                    required
+                  >
+                    <option value="">Select Mode</option>
+                    {TRAVEL_MODES.map(mode => (
+                      <option key={mode} value={mode}>{mode}</option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div className="form-group">
                 <label>From</label>
-                <input
-                  type="text"
-                  placeholder="Starting location"
-                  value={detail.from}
-                  onChange={(e) => handleChange(e, index, "from")}
-                  required
-                />
+                {detail.isCustomFromCity ? (
+                  <input
+                    type="text"
+                    placeholder="Enter departure city"
+                    value={detail.from}
+                    onChange={(e) => handleChange(e, index, "customFrom")}
+                    required
+                  />
+                ) : (
+                  <select
+                    value={detail.from}
+                    onChange={(e) => handleChange(e, index, "from")}
+                    required
+                  >
+                    <option value="">Select City</option>
+                    {COMMON_CITIES.map(city => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                    <option value="Other">Other (Enter manually)</option>
+                  </select>
+                )}
               </div>
 
               <div className="form-group">
                 <label>To</label>
-                <input
-                  type="text"
-                  placeholder="Destination"
-                  value={detail.to}
-                  onChange={(e) => handleChange(e, index, "to")}
-                  required
-                />
+                {detail.isCustomToCity ? (
+                  <input
+                    type="text"
+                    placeholder="Enter destination city"
+                    value={detail.to}
+                    onChange={(e) => handleChange(e, index, "customTo")}
+                    required
+                  />
+                ) : (
+                  <select
+                    value={detail.to}
+                    onChange={(e) => handleChange(e, index, "to")}
+                    required
+                  >
+                    <option value="">Select City</option>
+                    {COMMON_CITIES.map(city => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                    <option value="Other">Other (Enter manually)</option>
+                  </select>
+                )}
               </div>
 
               <div className="form-group">
-                <label>Contact Address</label>
-                <input
-                  type="text"
-                  placeholder="Contact address during tour"
-                  value={detail.contactAddress}
-                  onChange={(e) => handleChange(e, index, "contactAddress")}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Telephone No</label>
-                <input
-                  type="tel"
-                  placeholder="Contact number"
-                  value={detail.telephoneNo}
-                  onChange={(e) => handleChange(e, index, "telephoneNo")}
-                  required
-                />
+                <label>Contact Number</label>
+                <div className="phone-input-container" style={{ display: 'flex', alignItems: 'center' }}>
+                  <span style={{ 
+                    padding: '8px 12px', 
+                    backgroundColor: '#f5f5f5', 
+                    border: '1px solid #ccc',
+                    borderRight: 'none',
+                    borderRadius: '4px 0 0 4px'
+                  }}>+91</span>
+                  <input
+                    type="tel"
+                    placeholder="10-digit mobile number (start with 6-9)"
+                    value={detail.telephoneNo}
+                    onChange={(e) => handleChange(e, index, "telephoneNo")}
+                    required
+                    pattern="[6-9][0-9]{9}"
+                    maxLength="10"
+                    style={{ 
+                      borderRadius: '0 4px 4px 0',
+                      flex: 1
+                    }}
+                    title="Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9"
+                  />
+                </div>
+                {detail.telephoneNo && detail.telephoneNo.length === 10 && !/^[6-9]/.test(detail.telephoneNo) && (
+                  <p style={{ color: 'red', margin: '5px 0 0', fontSize: '12px' }}>
+                    Mobile number must start with 6, 7, 8, or 9
+                  </p>
+                )}
+                {detail.telephoneNo && detail.telephoneNo.length > 0 && detail.telephoneNo.length < 10 && (
+                  <p style={{ color: 'red', margin: '5px 0 0', fontSize: '12px' }}>
+                    Please enter all 10 digits
+                  </p>
+                )}
               </div>
 
               <div className="form-group full-width">

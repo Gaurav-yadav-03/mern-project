@@ -1,37 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './Navbar.module.css';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, user, loading, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   
   // Get user picture URL
   const userPicture = user?.picture || 'default-avatar-url.png';
 
-  useEffect(() => {
-    // Check authentication status when component mounts
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/auth/status', {
-          credentials: 'include'
-        });
-        const data = await response.json();
-        if (data.isAuthenticated) {
-          setUser(data.user);
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-      }
-    };
-    
-    checkAuth();
-  }, []);
-
   // Check if user is admin
-  const isAdmin = user && user.email === 'luffy12@gmail.com';
+  const isAdmin = user && user.isAdmin === true;
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -43,29 +26,28 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        // Clear local storage
-        localStorage.removeItem('user');
-        // Redirect to login page
-        window.location.href = '/login';
-      } else {
-        const data = await response.json();
-        console.error('Logout failed:', data.error);
-        throw new Error(data.error || 'Logout failed');
-      }
+      console.log('Logout button clicked');
+      await logout();
+      // Close dropdown
+      setShowProfileDropdown(false);
+      // Redirect to home page
+      navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);
       // You might want to show an error message to the user here
     }
   };
+
+  useEffect(() => {
+    // Close the mobile menu when route changes
+    setIsMenuOpen(false);
+    // Close profile dropdown when route changes
+    setShowProfileDropdown(false);
+  }, [location.pathname]);
+
+  if (loading) {
+    return <div className={styles.loading}>Loading...</div>;
+  }
 
   return (
     <nav className={styles.navbar}>
@@ -83,20 +65,27 @@ const Navbar = () => {
         <Link to="/" className={`${styles.navLink} ${isActive('/') ? styles.active : ''}`}>
           Home
         </Link>
-        <Link to="/basic-details" className={`${styles.navLink} ${isActive('/basic-details') ? styles.active : ''}`}>
-          Create Invoice
-        </Link>
-        <Link to="/invoice-history" className={`${styles.navLink} ${isActive('/invoice-history') ? styles.active : ''}`}>
-          Invoice History
-        </Link>
         
-        {isAdmin && (
+        {/* Show Create Invoice and Invoice History only for authenticated non-admin users */}
+        {isAuthenticated && !isAdmin && (
+          <>
+            <Link to="/basic-details" className={`${styles.navLink} ${isActive('/basic-details') ? styles.active : ''}`}>
+              Create Invoice
+            </Link>
+            <Link to="/invoice-history" className={`${styles.navLink} ${isActive('/invoice-history') ? styles.active : ''}`}>
+              Invoice History
+            </Link>
+          </>
+        )}
+        
+        {/* Show Admin Panel only for admin users */}
+        {isAuthenticated && isAdmin && (
           <Link to="/admin" className={`${styles.navLink} ${isActive('/admin') ? styles.active : ''}`}>
             Admin Panel
           </Link>
         )}
         
-        {user ? (
+        {isAuthenticated ? (
           <div className={styles.profileSection}>
             <div 
               className={styles.profileCircle} 
@@ -119,9 +108,14 @@ const Navbar = () => {
                 <div className={styles.userInfo}>
                   <span className={styles.userName}>{user.name}</span>
                   <span className={styles.userEmail}>{user.email}</span>
+                  {isAdmin && <span className={styles.userRole}>Administrator</span>}
                 </div>
                 <div className={styles.dropdownDivider} />
-                <Link to="/profile" className={styles.dropdownItem}>
+                <Link 
+                  to="/profile" 
+                  className={styles.dropdownItem}
+                  onClick={() => setShowProfileDropdown(false)}
+                >
                   Edit Profile
                 </Link>
                 <button onClick={handleLogout} className={styles.dropdownItem}>

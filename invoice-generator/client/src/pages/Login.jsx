@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Login.module.css';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, loading, login } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -13,23 +15,13 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Add authentication check at component mount
+  // Redirect if already authenticated
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/auth/status', {
-          credentials: 'include'
-        });
-        const data = await response.json();
-        if (data.isAuthenticated) {
-          navigate('/', { replace: true });
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-      }
-    };
-    checkAuth();
-  }, [navigate]);
+    if (isAuthenticated && !loading) {
+      console.log('User is already authenticated, redirecting to home');
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, loading, navigate]);
 
   // In your Login component, ensure the form data is being sent correctly
   const handleSubmit = async (e) => {
@@ -39,6 +31,8 @@ const Login = () => {
   
     try {
       const endpoint = isLogin ? 'login' : 'register';
+      console.log(`Attempting ${endpoint} with email:`, formData.email);
+      
       const response = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
         method: 'POST',
         headers: {
@@ -55,10 +49,15 @@ const Login = () => {
       const data = await response.json();
   
       if (response.ok) {
+        console.log(`${endpoint} successful:`, data);
+        
         if (isLogin) {
-          localStorage.setItem('user', JSON.stringify(data.user));
+          // Use the auth context login function
+          login(data.user);
+          navigate('/', { replace: true });
         } else {
           // After successful registration, automatically log in
+          console.log('Registration successful, attempting login');
           const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
             method: 'POST',
             headers: {
@@ -70,15 +69,20 @@ const Login = () => {
               password: formData.password
             })
           });
+          
           const loginData = await loginResponse.json();
+          
           if (loginResponse.ok) {
-            localStorage.setItem('user', JSON.stringify(loginData.user));
+            console.log('Auto-login after registration successful:', loginData);
+            login(loginData.user);
+            navigate('/', { replace: true });
+          } else {
+            setError('Registration successful but automatic login failed. Please log in manually.');
           }
         }
-        navigate('/');
       } else {
+        console.error(`${endpoint} failed:`, data.error);
         setError(data.error || (isLogin ? 'Login failed' : 'Registration failed'));
-        console.error(isLogin ? 'Login error:' : 'Registration error:', data.error);
       }
     } catch (error) {
       console.error(isLogin ? 'Login error:' : 'Registration error:', error);
@@ -89,6 +93,7 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
+    console.log('Redirecting to Google OAuth login');
     window.location.href = 'http://localhost:5000/api/auth/google';
   };
 
