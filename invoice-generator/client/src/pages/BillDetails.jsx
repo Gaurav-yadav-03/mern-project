@@ -210,13 +210,33 @@ const BillDetails = () => {
         const formData = new FormData();
         formData.append('bill', newBill.file);
         
-        const response = await axios.post('http://localhost:5000/upload/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
+        console.log('Uploading file:', newBill.file.name, 'size:', newBill.file.size, 'type:', newBill.file.type);
         
-        fileUrl = response.data.fileUrl;
+        try {
+          const response = await axios.post('http://localhost:5000/upload/upload', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+          
+          console.log('Upload response:', response.data);
+          
+          if (response.data.fileUrl) {
+            fileUrl = response.data.fileUrl;
+          } else {
+            throw new Error('No file URL returned from server');
+          }
+        } catch (uploadError) {
+          console.error('Error uploading file:', uploadError);
+          
+          // Check if there's a response with error details
+          if (uploadError.response && uploadError.response.data) {
+            console.error('Server error response:', uploadError.response.data);
+            throw new Error(uploadError.response.data.error || 'Failed to upload file');
+          } else {
+            throw new Error('Failed to upload file: Network or server error');
+          }
+        }
       }
       
       const billToAdd = {
@@ -225,6 +245,7 @@ const BillDetails = () => {
         id: Date.now().toString()
       };
       
+      console.log('Adding bill:', billToAdd);
       setBills([...bills, billToAdd]);
       setNewBill({
         name: '',
@@ -236,8 +257,9 @@ const BillDetails = () => {
       });
       setSelectedFileName('');
     } catch (err) {
-      console.error('Error uploading file:', err);
-      setError('Failed to upload file. Please try again.');
+      console.error('Error adding bill:', err);
+      setError(err.message || 'Failed to add bill. Please try again.');
+      alert('Error: ' + (err.message || 'Failed to add bill'));
     } finally {
       setLoading(false);
     }
@@ -259,13 +281,33 @@ const BillDetails = () => {
         const formData = new FormData();
         formData.append('bill', newConveyance.file);
         
-        const response = await axios.post('http://localhost:5000/upload/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
+        console.log('Uploading conveyance file:', newConveyance.file.name, 'size:', newConveyance.file.size, 'type:', newConveyance.file.type);
         
-        fileUrl = response.data.fileUrl;
+        try {
+          const response = await axios.post('http://localhost:5000/upload/upload', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+          
+          console.log('Upload response:', response.data);
+          
+          if (response.data.fileUrl) {
+            fileUrl = response.data.fileUrl;
+          } else {
+            throw new Error('No file URL returned from server');
+          }
+        } catch (uploadError) {
+          console.error('Error uploading conveyance file:', uploadError);
+          
+          // Check if there's a response with error details
+          if (uploadError.response && uploadError.response.data) {
+            console.error('Server error response:', uploadError.response.data);
+            throw new Error(uploadError.response.data.error || 'Failed to upload file');
+          } else {
+            throw new Error('Failed to upload file: Network or server error');
+          }
+        }
       }
       
       // Clean up the object to remove flag properties
@@ -277,6 +319,7 @@ const BillDetails = () => {
         id: Date.now().toString()
       };
       
+      console.log('Adding conveyance:', conveyanceToAdd);
       setConveyances([...conveyances, conveyanceToAdd]);
       setNewConveyance({
         date: '',
@@ -293,8 +336,9 @@ const BillDetails = () => {
       setSelectedConveyanceFileName('');
       setShowConveyanceForm(false);
     } catch (err) {
-      console.error('Error uploading file:', err);
-      setError('Failed to upload conveyance bill. Please try again.');
+      console.error('Error adding conveyance:', err);
+      setError(err.message || 'Failed to add conveyance. Please try again.');
+      alert('Error: ' + (err.message || 'Failed to add conveyance'));
     } finally {
       setConveyanceLoading(false);
     }

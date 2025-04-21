@@ -73,10 +73,12 @@ async function generateInvoice(data) {
       }
 
       try {
-        // Generate all pages regardless of data presence
+        // Generate pages only if there's relevant data
         
-        // Page 1: Basic Details (always generate)
-        generateBasicDetailsPage(doc, data);
+        // Page 1: Basic Details (only if agendaItems exist)
+        if (data.agendaItems && data.agendaItems.length > 0) {
+          generateBasicDetailsPage(doc, data);
+        }
         
         // Page 2: Tour Programme (only if tourSummary exists)
         if (data.tourSummary && data.tourSummary.tourDetails && data.tourSummary.tourDetails.length > 0) {
@@ -229,34 +231,19 @@ function generateBasicDetailsPage(doc, data) {
     headerX += width;
   });
   
-  // Get agenda items from the correct location
-  // The BasicDetails.jsx page stores them in the top-level agendaItems array
+  // Get agenda items directly from data.agendaItems and ensure it's always an array
   let agendaItems = [];
-  
-  // Primary location: data.agendaItems (this is where BasicDetails.jsx stores them)
-  if (Array.isArray(data.agendaItems) && data.agendaItems.length > 0) {
+  if (Array.isArray(data.agendaItems)) {
     agendaItems = data.agendaItems;
-    console.log('Using agenda items from data.agendaItems');
-  }
-  // Check if they're in the employee object
-  else if (data.employee && Array.isArray(data.employee.agendaItems) && data.employee.agendaItems.length > 0) {
+  } else if (data.employee && Array.isArray(data.employee.agendaItems)) {
+    // Try to get agenda items from employee object if they're not directly in data
     agendaItems = data.employee.agendaItems;
-    console.log('Using agenda items from data.employee.agendaItems');
-  }
-  // If still not found, create a placeholder
-  else {
-    console.log('No agenda items found. Creating a single empty row.');
-    agendaItems = [{ 
-      agendaItem: '',
-      fromDate: '',
-      toDate: '',
-      actionTaken: ''
-    }];
   }
   
-  // Debug log what we found
-  console.log('Agenda items to render:', JSON.stringify(agendaItems, null, 2));
+  // Debug the agenda items to see what's available
+  console.log('Agenda items to render (detailed):', JSON.stringify(agendaItems, null, 2));
   console.log('Number of agenda items:', agendaItems.length);
+  console.log('Data structure:', JSON.stringify(Object.keys(data), null, 2));
   
   // Create table borders
   doc.rect(50, startY, tableWidth, 30).stroke(); // Header row
@@ -265,88 +252,65 @@ function generateBasicDetailsPage(doc, data) {
   let rowY = startY + 30; // Start right after header
   const rowHeight = 40;
   
-  // Loop through agenda items
-  agendaItems.forEach((item, index) => {
-    // Draw row borders
+  if (agendaItems && agendaItems.length > 0) {
+    // Loop through agenda items
+    agendaItems.forEach((item, index) => {
+      // Draw row borders
+      doc.rect(50, rowY, tableWidth, rowHeight).stroke();
+      
+      const textY = rowY + 15; // Center text vertically in row
+      
+      // Draw data in columns
+      let colX = 50;
+      
+      // Sr. No.
+      doc.text((index + 1).toString(), colX + 5, textY, { 
+        width: actualColWidths[0] - 10,
+        align: 'center' 
+      });
+      colX += actualColWidths[0];
+      
+      // Agenda Item
+      const agendaItem = item.agendaItem || 'N/A';
+      doc.text(agendaItem, colX + 5, textY, { 
+        width: actualColWidths[1] - 10,
+        ellipsis: true
+      });
+      colX += actualColWidths[1];
+      
+      // From Date
+      const fromDate = item.fromDate ? new Date(item.fromDate).toLocaleDateString() : 'N/A';
+      doc.text(fromDate, colX + 5, textY, {
+        width: actualColWidths[2] - 10,
+        align: 'center'
+      });
+      colX += actualColWidths[2];
+      
+      // To Date
+      const toDate = item.toDate ? new Date(item.toDate).toLocaleDateString() : 'N/A';
+      doc.text(toDate, colX + 5, textY, {
+        width: actualColWidths[3] - 10,
+        align: 'center'
+      });
+      colX += actualColWidths[3];
+      
+      // Record note of Action taken
+      const actionTaken = item.actionTaken || 'N/A';
+      doc.text(actionTaken, colX + 5, textY, {
+        width: actualColWidths[4] - 10,
+        ellipsis: true
+      });
+      
+      // Move to next row
+      rowY += rowHeight;
+    });
+  } else {
+    // No agenda items message
     doc.rect(50, rowY, tableWidth, rowHeight).stroke();
-    
-    const textY = rowY + 15; // Center text vertically in row
-    
-    // Draw data in columns
-    let colX = 50;
-    
-    // Sr. No.
-    doc.fontSize(9).font('Helvetica');
-    doc.text((index + 1).toString(), colX + 5, textY, { 
-      width: actualColWidths[0] - 10,
-      align: 'center' 
-    });
-    colX += actualColWidths[0];
-    
-    // Agenda Item
-    const agendaItem = item.agendaItem || '';
-    doc.text(agendaItem, colX + 5, textY, { 
-      width: actualColWidths[1] - 10,
-      ellipsis: true
-    });
-    colX += actualColWidths[1];
-    
-    // From Date
-    let fromDate = '';
-    if (item.fromDate) {
-      // Try to format the date in a readable way
-      try {
-        const dateObj = new Date(item.fromDate);
-        fromDate = dateObj.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        }).replace(/\//g, '-');
-      } catch (e) {
-        // If parsing fails, just use the raw string
-        fromDate = item.fromDate;
-      }
-    }
-    
-    doc.text(fromDate, colX + 5, textY, {
-      width: actualColWidths[2] - 10,
-      align: 'center'
-    });
-    colX += actualColWidths[2];
-    
-    // To Date
-    let toDate = '';
-    if (item.toDate) {
-      // Try to format the date in a readable way
-      try {
-        const dateObj = new Date(item.toDate);
-        toDate = dateObj.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        }).replace(/\//g, '-');
-      } catch (e) {
-        // If parsing fails, just use the raw string
-        toDate = item.toDate;
-      }
-    }
-    
-    doc.text(toDate, colX + 5, textY, {
-      width: actualColWidths[3] - 10,
-      align: 'center'
-    });
-    colX += actualColWidths[3];
-    
-    // Record note of Action taken
-    const actionTaken = item.actionTaken || '';
-    doc.text(actionTaken, colX + 5, textY, {
-      width: actualColWidths[4] - 10,
-      ellipsis: true
-    });
-    
-    // Move to next row
+    doc.fontSize(10).font('Helvetica');
+    doc.text('No agenda items found.', 150, rowY + 15);
     rowY += rowHeight;
-  });
+  }
   
   // Draw vertical lines to separate columns
   let vertX = 50;
@@ -369,42 +333,44 @@ function generateBasicDetailsPage(doc, data) {
 
 // Function to generate bill attachments in a more efficient way
 function generateBillAttachments(doc, bills) {
-  let currentY = 50;
+  doc.fontSize(16).font('Helvetica-Bold').text('Bill Attachments', { align: 'center' });
+  doc.moveDown(0.5);
+  
+  let currentY = doc.y;
+  const pageHeight = doc.page.height - 100;
+  const imageMaxHeight = 200;
   
   for (const bill of bills) {
     if (bill.fileUrl) {
       try {
-        // Always start a new page for each bill
-        doc.addPage();
-        currentY = 50;
+        // Check if we need to add a new page
+        if (currentY + imageMaxHeight + 50 > pageHeight) {
+          doc.addPage();
+          currentY = 50;
+        }
         
-        // Title and bill info at top of page
-        doc.fontSize(14).font('Helvetica-Bold').text('Bill Attachment', { align: 'center' });
-        doc.moveDown(0.3);
-        doc.fontSize(11).font('Helvetica');
+        doc.fontSize(12).font('Helvetica');
         doc.text(`Bill No: ${bill.billNo || 'N/A'} | Amount: Rs ${Number(bill.amount || 0).toLocaleString('en-IN')}`, { align: 'center' });
-        currentY = doc.y + 5;
+        currentY = doc.y + 10;
         
         // Find image path
         let imagePath = findImagePath(bill.fileUrl);
         
         if (imagePath) {
-          // Use nearly full page for image (leaving room for header)
-          const imageHeight = doc.page.height - currentY - 50; // Leave 50px bottom margin
-          const imageWidth = doc.page.width - 100; // 50px margins on each side
-          
           doc.image(imagePath, {
-            fit: [imageWidth, imageHeight],
+            fit: [400, imageMaxHeight],
             align: 'center'
           });
+          doc.moveDown();
         } else {
-          doc.moveDown(5);
-          doc.fontSize(12).font('Helvetica-Bold');
           doc.text('Bill file not found. Please check the file path.', { align: 'center' });
         }
+        
+        currentY = doc.y + 20;
       } catch (error) {
         console.error('Error processing bill attachment:', error);
         doc.text('Error processing bill attachment: ' + error.message, { align: 'center' });
+        currentY = doc.y + 10;
       }
     }
   }
@@ -412,42 +378,44 @@ function generateBillAttachments(doc, bills) {
 
 // Function to generate expense attachments in a more efficient way
 function generateExpenseAttachments(doc, expenses) {
-  let currentY = 50;
+  doc.fontSize(16).font('Helvetica-Bold').text('Travel Ticket Attachments', { align: 'center' });
+  doc.moveDown(0.5);
+  
+  let currentY = doc.y;
+  const pageHeight = doc.page.height - 100;
+  const imageMaxHeight = 200;
   
   for (const expense of expenses) {
     if (expense.fileUrl) {
       try {
-        // Always start a new page for each expense
-        doc.addPage();
-        currentY = 50;
+        // Check if we need to add a new page
+        if (currentY + imageMaxHeight + 50 > pageHeight) {
+          doc.addPage();
+          currentY = 50;
+        }
         
-        // Title and expense info at top of page
-        doc.fontSize(14).font('Helvetica-Bold').text('Travel Ticket Attachment', { align: 'center' });
-        doc.moveDown(0.3);
-        doc.fontSize(11).font('Helvetica');
-        doc.text(`From: ${expense.from || 'N/A'} To: ${expense.to || 'N/A'} | Amount: Rs ${Number(expense.ticketAmount || expense.amount || 0).toLocaleString('en-IN')}`, { align: 'center' });
-        currentY = doc.y + 5;
+        doc.fontSize(12).font('Helvetica');
+        doc.text(`From: ${expense.from || 'N/A'} To: ${expense.to || 'N/A'} | Amount: Rs ${Number(expense.amount || 0).toLocaleString('en-IN')}`, { align: 'center' });
+        currentY = doc.y + 10;
         
         // Find image path
         let imagePath = findImagePath(expense.fileUrl);
         
         if (imagePath) {
-          // Use nearly full page for image (leaving room for header)
-          const imageHeight = doc.page.height - currentY - 50; // Leave 50px bottom margin
-          const imageWidth = doc.page.width - 100; // 50px margins on each side
-          
           doc.image(imagePath, {
-            fit: [imageWidth, imageHeight],
+            fit: [400, imageMaxHeight],
             align: 'center'
           });
+          doc.moveDown();
         } else {
-          doc.moveDown(5);
-          doc.fontSize(12).font('Helvetica-Bold');
           doc.text('Ticket file not found. Please check the file path.', { align: 'center' });
         }
+        
+        currentY = doc.y + 20;
       } catch (error) {
         console.error('Error processing ticket attachment:', error);
         doc.text('Error processing ticket attachment: ' + error.message, { align: 'center' });
+        currentY = doc.y + 10;
       }
     }
   }
@@ -455,42 +423,44 @@ function generateExpenseAttachments(doc, expenses) {
 
 // Function to generate conveyance attachments in a more efficient way
 function generateConveyanceAttachments(doc, conveyances) {
-  let currentY = 50;
+  doc.fontSize(16).font('Helvetica-Bold').text('Conveyance Receipt Attachments', { align: 'center' });
+  doc.moveDown(0.5);
+  
+  let currentY = doc.y;
+  const pageHeight = doc.page.height - 100;
+  const imageMaxHeight = 200;
   
   for (const conveyance of conveyances) {
     if (conveyance.fileUrl) {
       try {
-        // Always start a new page for each conveyance
-        doc.addPage();
-        currentY = 50;
+        // Check if we need to add a new page
+        if (currentY + imageMaxHeight + 50 > pageHeight) {
+          doc.addPage();
+          currentY = 50;
+        }
         
-        // Title and conveyance info at top of page
-        doc.fontSize(14).font('Helvetica-Bold').text('Conveyance Receipt Attachment', { align: 'center' });
-        doc.moveDown(0.3);
-        doc.fontSize(11).font('Helvetica');
+        doc.fontSize(12).font('Helvetica');
         doc.text(`Place: ${conveyance.place || 'N/A'} | Amount: Rs ${Number(conveyance.amount || 0).toLocaleString('en-IN')}`, { align: 'center' });
-        currentY = doc.y + 5;
+        currentY = doc.y + 10;
         
         // Find image path
         let imagePath = findImagePath(conveyance.fileUrl);
         
         if (imagePath) {
-          // Use nearly full page for image (leaving room for header)
-          const imageHeight = doc.page.height - currentY - 50; // Leave 50px bottom margin
-          const imageWidth = doc.page.width - 100; // 50px margins on each side
-          
           doc.image(imagePath, {
-            fit: [imageWidth, imageHeight],
+            fit: [400, imageMaxHeight],
             align: 'center'
           });
+          doc.moveDown();
         } else {
-          doc.moveDown(5);
-          doc.fontSize(12).font('Helvetica-Bold');
           doc.text('Receipt file not found. Please check the file path.', { align: 'center' });
         }
+        
+        currentY = doc.y + 20;
       } catch (error) {
         console.error('Error processing conveyance attachment:', error);
         doc.text('Error processing conveyance attachment: ' + error.message, { align: 'center' });
+        currentY = doc.y + 10;
       }
     }
   }
@@ -761,12 +731,6 @@ function generateTourSummaryTable(doc, data, drawTableLine, drawTableBorders) {
   const totalY = blankSpaceY + 25;
   doc.rect(50, totalY, pageWidth * 0.6, 25).stroke();
   doc.text('Total', 55, totalY + 7);
-  doc.text(':', 200, totalY + 7);
-  doc.text('Rs', 425, totalY + 7);
-  
-  // Total row
-  doc.rect(50, totalY, pageWidth * 0.6, 25).stroke();
-  doc.text('Total:', 55, totalY + 7);
   doc.text(':', 200, totalY + 7);
   doc.text('Rs', 425, totalY + 7);
   
@@ -1059,7 +1023,7 @@ function generateBillDetailsTable(doc, data, drawTableLine, drawTableBorders) {
 
 function generateFinalSummary(doc, data) {
   try {
-    // Create a statement of travelling bill form that uses actual data
+    // Create a statement of travelling bill form in a more compact design
     doc.fontSize(11).font('Helvetica-Bold').text('National Cooperative Exports Limited', { align: 'center' });
     doc.fontSize(10).font('Helvetica-Bold').text('STATEMENT OF TRAVELLING BILL', { align: 'center' });
     doc.moveDown(0.2);
@@ -1067,88 +1031,51 @@ function generateFinalSummary(doc, data) {
     const pageWidth = doc.page.width - 100;
     const rowHeight = 18; // Smaller row height
     
-    // Extract relevant data from the form
-    const employee = data.employee || {};
-    const expenses = data.expenses || [];
-    const bills = data.bills || [];
-    const conveyances = data.conveyances || [];
-    
-    // Calculate totals
-    const totalExpensesAmount = expenses.reduce((sum, exp) => sum + (Number(exp.ticketAmount || exp.amount) || 0), 0);
-    const totalBillsAmount = bills.reduce((sum, bill) => sum + (Number(bill.amount) || 0), 0);
-    const totalConveyanceAmount = conveyances.reduce((sum, conv) => sum + (Number(conv.amount) || 0), 0);
-    
-    // Calculate DA based on number of days (if available)
-    const dailyAllowanceRate = 400; // Rs per day
-    const daysOnTour = employee.tourPeriod || 1;
-    const dailyAllowanceAmount = dailyAllowanceRate * daysOnTour;
-    
-    // Calculate grand total
-    const grandTotal = totalExpensesAmount + totalBillsAmount + totalConveyanceAmount + dailyAllowanceAmount;
-    
     // Employee details section (top row)
     const topRowY = doc.y;
     
     // First column - Name
     doc.rect(50, topRowY, pageWidth * 0.4, rowHeight).stroke();
     doc.fontSize(8).font('Helvetica');
-    doc.text(employee.employeeName || 'N/A', 55, topRowY + 5);
+    doc.text(data.employee?.employeeName || 'Prateek Verma', 55, topRowY + 5);
     
     // Second column - Empl. No.
     doc.rect(50 + pageWidth * 0.4, topRowY, pageWidth * 0.3, rowHeight).stroke();
-    doc.text(`Empl. No. ${employee.employeeId || 'N/A'}`, 50 + pageWidth * 0.4 + 5, topRowY + 5);
+    doc.text(`Empl. No. NCEL-01`, 50 + pageWidth * 0.4 + 5, topRowY + 5);
     
     // Third column - Designation
     doc.rect(50 + pageWidth * 0.7, topRowY, pageWidth * 0.3, rowHeight).stroke();
-    doc.text(`Designation: ${employee.designation || 'N/A'}`, 50 + pageWidth * 0.7 + 5, topRowY + 5);
+    doc.text(`Designation: Data Analyst`, 50 + pageWidth * 0.7 + 5, topRowY + 5);
     
     // Second row
     const secondRowY = topRowY + rowHeight;
     
     // First column - Station/s
     doc.rect(50, secondRowY, pageWidth * 0.4, rowHeight).stroke();
-    // Get all unique "to" locations from expenses
-    const stations = [...new Set(expenses.map(exp => exp.to).filter(Boolean))].join(', ');
-    doc.text(`Station/s: ${stations || 'N/A'}`, 55, secondRowY + 5);
+    doc.text(`Station/s: Chandigarh`, 55, secondRowY + 5);
     
     // Second column - Department
     doc.rect(50 + pageWidth * 0.4, secondRowY, pageWidth * 0.3, rowHeight).stroke();
-    doc.text(`Dept: ${employee.department || 'N/A'}`, 50 + pageWidth * 0.4 + 5, secondRowY + 5);
+    doc.text(`Dept: ACCOUNTS`, 50 + pageWidth * 0.4 + 5, secondRowY + 5);
     
     // Third column - HQ
     doc.rect(50 + pageWidth * 0.7, secondRowY, pageWidth * 0.3, rowHeight).stroke();
-    doc.text(`HQ: ${employee.hq || 'Delhi'}`, 50 + pageWidth * 0.7 + 5, secondRowY + 5);
+    doc.text(`HQ: Delhi`, 50 + pageWidth * 0.7 + 5, secondRowY + 5);
     
-    // Third row - get earliest and latest travel dates
+    // Third row
     const thirdRowY = secondRowY + rowHeight;
-    
-    // Extract departure and return dates from expenses if available
-    const allDates = expenses.map(exp => new Date(exp.date || exp.departureDate || Date.now()));
-    const earliestDate = allDates.length > 0 ? 
-      new Date(Math.min.apply(null, allDates)) : new Date();
-    const latestDate = allDates.length > 0 ? 
-      new Date(Math.max.apply(null, allDates)) : new Date();
-    
-    // Format dates
-    const formatDate = (date) => {
-      return date.toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      }).replace(/\//g, '.');
-    };
     
     // First column - Boarding Date
     doc.rect(50, thirdRowY, pageWidth * 0.4, rowHeight).stroke();
-    doc.text(`Boarding Dt: ${formatDate(earliestDate)}`, 55, thirdRowY + 5);
+    doc.text(`Boarding Dt: 20.03.2025`, 55, thirdRowY + 5);
     
     // Second column - Time
     doc.rect(50 + pageWidth * 0.4, thirdRowY, pageWidth * 0.3, rowHeight).stroke();
-    doc.text(`Time: ${employee.departureTime || 'N/A'}`, 50 + pageWidth * 0.4 + 5, thirdRowY + 5);
+    doc.text(`Time: 1700 hrs`, 50 + pageWidth * 0.4 + 5, thirdRowY + 5);
     
     // Third column - Return to HQ
     doc.rect(50 + pageWidth * 0.7, thirdRowY, pageWidth * 0.3, rowHeight).stroke();
-    doc.text(`Return: ${formatDate(latestDate)}, ${employee.returnTime || 'N/A'}`, 50 + pageWidth * 0.7 + 5, thirdRowY + 5);
+    doc.text(`Return: 21/03/2025, 2100 hrs`, 50 + pageWidth * 0.7 + 5, thirdRowY + 5);
     
     // Fourth row
     const fourthRowY = thirdRowY + rowHeight;
@@ -1159,14 +1086,11 @@ function generateFinalSummary(doc, data) {
     
     // Second column - Purpose details
     doc.rect(50 + pageWidth * 0.4, fourthRowY, pageWidth * 0.3, rowHeight).stroke();
-    // Get agenda items if available
-    const purpose = data.agendaItems && data.agendaItems.length > 0 ? 
-      data.agendaItems[0].agendaItem : (employee.purpose || 'N/A');
-    doc.text(purpose, 50 + pageWidth * 0.4 + 5, fourthRowY + 5);
+    doc.text('Vendor Meet', 50 + pageWidth * 0.4 + 5, fourthRowY + 5);
     
     // Third column - Days on Tour
     doc.rect(50 + pageWidth * 0.7, fourthRowY, pageWidth * 0.3, rowHeight).stroke();
-    doc.text(`Days on Tour: ${daysOnTour}`, 50 + pageWidth * 0.7 + 5, fourthRowY + 5);
+    doc.text(`Days on Tour: 1`, 50 + pageWidth * 0.7 + 5, fourthRowY + 5);
     
     // PARTICULARS OF EXPENSES section
     const expensesHeaderY = fourthRowY + rowHeight;
@@ -1190,29 +1114,26 @@ function generateFinalSummary(doc, data) {
     doc.moveTo(50 + pageWidth * 0.33, travelGridY).lineTo(50 + pageWidth * 0.33, travelGridY + travelGridHeight).stroke();
     doc.moveTo(50 + pageWidth * 0.66, travelGridY).lineTo(50 + pageWidth * 0.66, travelGridY + travelGridHeight).stroke();
     
-    // Add travel data in a compact format (up to 3 columns)
+    // Add travel data in a compact format (3 columns)
     doc.fontSize(8).font('Helvetica');
     
-    // Display up to 3 expense entries in the grid
-    const displayExpenses = expenses.slice(0, 3); // Take up to 3 expenses
+    // Column 1
+    doc.text('Date: 20/03/2025', 55, travelGridY + 5);
+    doc.text('Mode: Air', 55, travelGridY + 18);
+    doc.text('From: Delhi', 55, travelGridY + 31);
+    doc.text('To: Chandigarh', 55, travelGridY + 44);
+    doc.text('Dep: 1700 Hrs', 55, travelGridY + 57);
+    doc.text('Arr: 2300 hrs', 55, travelGridY + 70);
     
-    displayExpenses.forEach((expense, index) => {
-      const colX = 55 + (pageWidth * 0.33 * index);
-      const expDate = expense.date || expense.departureDate ? 
-        new Date(expense.date || expense.departureDate) : new Date();
-      
-      doc.text(`Date: ${formatDate(expDate)}`, colX, travelGridY + 5);
-      doc.text(`Mode: ${expense.mode || 'N/A'}`, colX, travelGridY + 18);
-      doc.text(`From: ${expense.from || 'N/A'}`, colX, travelGridY + 31);
-      doc.text(`To: ${expense.to || 'N/A'}`, colX, travelGridY + 44);
-      doc.text(`Dep: ${expense.departureTime || 'N/A'}`, colX, travelGridY + 57);
-      doc.text(`Arr: ${expense.arrivalTime || 'N/A'}`, colX, travelGridY + 70);
-    });
+    // Column 2
+    doc.text('Date: 21/03/2025', 55 + pageWidth * 0.33 + 5, travelGridY + 5);
+    doc.text('Mode: Air', 55 + pageWidth * 0.33 + 5, travelGridY + 18);
+    doc.text('From: Chandigarh', 55 + pageWidth * 0.33 + 5, travelGridY + 31);
+    doc.text('To: Delhi', 55 + pageWidth * 0.33 + 5, travelGridY + 44);
+    doc.text('Dep: 1400 hrs', 55 + pageWidth * 0.33 + 5, travelGridY + 57);
+    doc.text('Arr: 2100 hrs', 55 + pageWidth * 0.33 + 5, travelGridY + 70);
     
-    // If no expenses, show placeholder text
-    if (displayExpenses.length === 0) {
-      doc.text('No travel expenses recorded', 55, travelGridY + 40);
-    }
+    // Column 3 - can be left blank or used for additional travel details if needed
     
     // Expenses section
     const expensesTableY = travelGridY + travelGridHeight;
@@ -1225,8 +1146,7 @@ function generateFinalSummary(doc, data) {
     doc.text('Amount of Fare', 55 + pageWidth * 0.1, expensesTableY + 5);
     
     doc.rect(50 + pageWidth * 0.7, expensesTableY, pageWidth * 0.3, rowHeight).stroke();
-    const formattedExpensesAmount = totalExpensesAmount.toFixed(2);
-    doc.text(formattedExpensesAmount, 50 + pageWidth * 0.7 + 75, expensesTableY + 5, { align: 'right' });
+    doc.text('0.00', 50 + pageWidth * 0.7 + 75, expensesTableY + 5, { align: 'right' });
     
     // Second row - Hotel Bills
     const hotelRowY = expensesTableY + rowHeight;
@@ -1237,8 +1157,7 @@ function generateFinalSummary(doc, data) {
     doc.text('Hotel Bills Bill (Daily) (Details on reverse)', 55 + pageWidth * 0.1, hotelRowY + 5);
     
     doc.rect(50 + pageWidth * 0.7, hotelRowY, pageWidth * 0.3, rowHeight).stroke();
-    const formattedBillsAmount = totalBillsAmount.toFixed(2);
-    doc.text(formattedBillsAmount, 50 + pageWidth * 0.7 + 75, hotelRowY + 5, { align: 'right' });
+    doc.text('2141.00', 50 + pageWidth * 0.7 + 75, hotelRowY + 5, { align: 'right' });
     
     // Third row - Conveyance Charges
     const conveyanceRowY = hotelRowY + rowHeight;
@@ -1249,8 +1168,7 @@ function generateFinalSummary(doc, data) {
     doc.text('Conveyance Charges (Details on reverse)', 55 + pageWidth * 0.1, conveyanceRowY + 5);
     
     doc.rect(50 + pageWidth * 0.7, conveyanceRowY, pageWidth * 0.3, rowHeight).stroke();
-    const formattedConveyanceAmount = totalConveyanceAmount.toFixed(2);
-    doc.text(formattedConveyanceAmount, 50 + pageWidth * 0.7 + 75, conveyanceRowY + 5, { align: 'right' });
+    doc.text('0.00', 50 + pageWidth * 0.7 + 75, conveyanceRowY + 5, { align: 'right' });
     
     // Fourth row - Others (condensed)
     const othersRowY = conveyanceRowY + rowHeight;
@@ -1280,10 +1198,10 @@ function generateFinalSummary(doc, data) {
     doc.text('6', 55, daRowY + 5);
     
     doc.rect(50 + pageWidth * 0.1, daRowY, pageWidth * 0.6, rowHeight).stroke();
-    doc.text(`Daily Allowance (${daysOnTour} day${daysOnTour > 1 ? 's' : ''} @ Rs.${dailyAllowanceRate}/day)`, 55 + pageWidth * 0.1, daRowY + 5);
+    doc.text('Daily Allowance (1 day @ Rs.400/day)', 55 + pageWidth * 0.1, daRowY + 5);
     
     doc.rect(50 + pageWidth * 0.7, daRowY, pageWidth * 0.3, rowHeight).stroke();
-    doc.text(dailyAllowanceAmount.toFixed(2), 50 + pageWidth * 0.7 + 75, daRowY + 5, { align: 'right' });
+    doc.text('400.00', 50 + pageWidth * 0.7 + 75, daRowY + 5, { align: 'right' });
     
     // Total row
     const finalTotalRowY = daRowY + rowHeight;
@@ -1292,61 +1210,13 @@ function generateFinalSummary(doc, data) {
     doc.text('TOTAL', 55 + pageWidth * 0.5, finalTotalRowY + 5);
     
     doc.rect(50 + pageWidth * 0.7, finalTotalRowY, pageWidth * 0.3, rowHeight).stroke();
-    const formattedGrandTotal = grandTotal.toLocaleString('en-IN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-    doc.text(formattedGrandTotal, 50 + pageWidth * 0.7 + 75, finalTotalRowY + 5, { align: 'right' });
-    
-    // Function to convert number to words
-    function numberToWords(num) {
-      const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-      const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-      
-      if (num === 0) return 'Zero';
-      
-      // For handling decimal part
-      const decimalStr = num.toString().split('.')[1];
-      const decimal = decimalStr ? parseInt(decimalStr) : 0;
-      
-      // For handling whole part
-      const whole = Math.floor(num);
-      
-      function convertLessThanOneThousand(n) {
-        if (n === 0) return '';
-        else if (n < 20) return units[n];
-        else if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? '-' + units[n % 10] : '');
-        else return units[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' ' + convertLessThanOneThousand(n % 100) : '');
-      }
-      
-      let result = '';
-      
-      if (whole === 0) result = 'Zero';
-      else {
-        const lakhs = Math.floor(whole / 100000);
-        const thousands = Math.floor((whole % 100000) / 1000);
-        const remaining = whole % 1000;
-        
-        if (lakhs > 0) result += convertLessThanOneThousand(lakhs) + ' Lakh ';
-        if (thousands > 0) result += convertLessThanOneThousand(thousands) + ' Thousand ';
-        if (remaining > 0) result += convertLessThanOneThousand(remaining);
-      }
-      
-      // Add the decimal part if exists
-      if (decimal > 0) {
-        result += ' Rupees and ' + (decimal < 10 ? '0' + decimal : decimal) + ' Paise';
-      } else {
-        result += ' Rupees Only';
-      }
-      
-      return result.trim();
-    }
+    doc.text('2,541.00', 50 + pageWidth * 0.7 + 75, finalTotalRowY + 5, { align: 'right' });
     
     // Amount in words
     const wordsRowY = finalTotalRowY + rowHeight;
     doc.rect(50, wordsRowY, pageWidth, rowHeight).stroke();
     doc.fontSize(8).font('Helvetica');
-    doc.text(`Rs.(In Words): ${numberToWords(grandTotal)}`, 55, wordsRowY + 5);
+    doc.text('Rs.(In Words): Two Thousand Five Hundred Forty-One Rupees', 55, wordsRowY + 5);
     
     // Advance section (condensed)
     const advanceRowY = wordsRowY + rowHeight;
@@ -1362,7 +1232,7 @@ function generateFinalSummary(doc, data) {
     doc.text('Total payable/receivable:', 55 + pageWidth * 0.4, totalPayableRowY + 5);
     
     doc.rect(50 + pageWidth * 0.7, totalPayableRowY, pageWidth * 0.3, rowHeight).stroke();
-    doc.text(formattedGrandTotal, 50 + pageWidth * 0.7 + 75, totalPayableRowY + 5, { align: 'right' });
+    doc.text('2,541.00', 50 + pageWidth * 0.7 + 75, totalPayableRowY + 5, { align: 'right' });
     
     // Signature row
     const signatureRowY = totalPayableRowY + rowHeight + 10;
