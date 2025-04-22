@@ -19,17 +19,37 @@ const authRoutes = require('./routes/auth');
 
 const app = express();
 
-// CORS configuration
+// Update CORS configuration for better cross-origin support
+// Replace the existing CORS configuration with more comprehensive settings
 const corsOptions = {
-  origin: 'http://localhost:5173',
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  optionsSuccessStatus: 200,
+  preflightContinue: false
 };
 
 // Apply CORS with options
 app.use(cors(corsOptions));
+
+// Also add a middleware to ensure CORS headers are set on all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost:5173');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+  );
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
 
 // Body parser middleware
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -319,6 +339,10 @@ app.post('/generate-invoice/validate', async (req, res) => {
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
+  // Set CORS headers directly on this response
+  res.header('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost:5173');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
   try {
     // Check MongoDB connection
     const dbState = mongoose.connection.readyState;
@@ -330,30 +354,33 @@ app.get('/health', async (req, res) => {
     };
 
     // Perform a simple database operation to verify connection
+    let dbCheck = { status: dbStatus[dbState] || 'unknown' };
     if (dbState === 1) {
-      await mongoose.connection.db.admin().ping();
+      try {
+        await mongoose.connection.db.admin().ping();
+        dbCheck.ping = 'successful';
+      } catch (dbError) {
+        dbCheck.ping = 'failed';
+        dbCheck.error = dbError.message;
+      }
     }
 
-    res.json({
+    res.status(200).json({
       status: 'ok',
-      timestamp: new Date(),
-      database: {
-        state: dbStatus[dbState],
-        host: mongoose.connection.host,
-        name: mongoose.connection.name
+      timestamp: new Date().toISOString(),
+      server: {
+        environment: process.env.NODE_ENV || 'development',
+        uptime: process.uptime()
       },
-      uptime: process.uptime()
+      database: dbCheck
     });
   } catch (error) {
     console.error('Health check failed:', error);
     res.status(503).json({
       status: 'error',
-      timestamp: new Date(),
-      error: error.message,
-      database: {
-        state: 'error',
-        details: error.message
-      }
+      timestamp: new Date().toISOString(),
+      message: 'Service unavailable',
+      error: error.message
     });
   }
 });
@@ -436,86 +463,156 @@ const connectDB = async () => {
 // Initialize MongoDB connection
 connectDB();
 
-// Direct PDF generation endpoint - with database save
+// Modify the direct-generate-pdf endpoint to properly retrieve all invoice data
 app.post('/direct-generate-pdf', async (req, res) => {
   try {
     console.log('=== Direct PDF Generation Request ===');
     
-    // Validate required fields
-    if (!req.body) {
-      return res.status(400).json({ error: 'No data provided' });
-    }
-
-    // Validate required nested objects
-    if (!req.body.employee) {
-      return res.status(400).json({ error: 'Employee details are required' });
-    }
-
-    if (!req.body.tourSummary || !req.body.tourSummary.tourDetails) {
-      return res.status(400).json({ error: 'Tour summary details are required' });
-    }
-
-    // Generate the invoice PDF
-    const filePath = await generateInvoice(req.body);
+    // Check if we're receiving an ID or full invoice data
+    let invoiceData = req.body;
     
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      return res.status(500).json({ error: 'Generated invoice file not found' });
+    // If we have an _id, fetch the complete invoice from DB
+    if (invoiceData._id) {
+      console.log('Invoice ID received:', invoiceData._id);
+      try {
+        const Invoice = require('./models/Invoice');
+        
+        // Fetch the invoice by ID - note that bills, expenses, conveyances are embedded, not references
+        const completeInvoice = await Invoice.findById(invoiceData._id).lean();
+        
+        if (completeInvoice) {
+          console.log('Found invoice in database with ID:', completeInvoice._id);
+          
+          // Use the complete invoice data directly 
+          invoiceData = completeInvoice;
+          
+          // Check for missing conveyances field and add if necessary
+          if (!invoiceData.conveyances) {
+            console.log('Conveyances field missing, adding empty array');
+            invoiceData.conveyances = [];
+          }
+          
+          // Ensure all necessary arrays exist (even if empty)
+          if (!Array.isArray(invoiceData.bills)) invoiceData.bills = [];
+          if (!Array.isArray(invoiceData.expenses)) invoiceData.expenses = [];
+          if (!Array.isArray(invoiceData.conveyances)) invoiceData.conveyances = [];
+          
+          // Ensure tourSummary and tourDetails exist
+          if (!invoiceData.tourSummary) invoiceData.tourSummary = { tourDetails: [] };
+          if (!Array.isArray(invoiceData.tourSummary.tourDetails)) {
+            invoiceData.tourSummary.tourDetails = [];
+          }
+          
+          // If no agenda items exist, create them from tour details
+          if (!Array.isArray(invoiceData.agendaItems) || invoiceData.agendaItems.length === 0) {
+            if (invoiceData.tourSummary.tourDetails && invoiceData.tourSummary.tourDetails.length > 0) {
+              console.log('Creating agenda items from tour details');
+              invoiceData.agendaItems = invoiceData.tourSummary.tourDetails.map(detail => ({
+                agendaItem: detail.purpose || 'Tour',
+                fromDate: detail.fromDate,
+                toDate: detail.toDate,
+                actionTaken: (detail.from || '') + ' to ' + (detail.to || '')
+              }));
+            } else {
+              invoiceData.agendaItems = [];
+            }
+          }
+          
+          console.log('Data prepared for PDF generation:', {
+            hasEmployee: !!invoiceData.employee,
+            billCount: invoiceData.bills.length,
+            expenseCount: invoiceData.expenses.length,
+            conveyanceCount: Array.isArray(invoiceData.conveyances) ? invoiceData.conveyances.length : 0,
+            agendaItemCount: invoiceData.agendaItems.length,
+            tourDetailCount: invoiceData.tourSummary.tourDetails.length
+          });
+          
+          // Log conveyance details for debugging
+          if (invoiceData.conveyances && invoiceData.conveyances.length > 0) {
+            console.log('Conveyance details found:', JSON.stringify(invoiceData.conveyances.map(c => ({
+              date: c.date,
+              place: c.place,
+              amount: c.amount
+            }))));
+          } else {
+            console.log('No conveyance details found in invoice data');
+          }
+        } else {
+          console.error('Invoice not found in database with ID:', invoiceData._id);
+          return res.status(404).json({ error: 'Invoice not found' });
+        }
+      } catch (dbError) {
+        console.error('Database error fetching invoice:', dbError);
+        return res.status(500).json({ 
+          error: 'Failed to fetch invoice data',
+          details: dbError.message
+        });
+      }
+    } else {
+      console.log('No invoice ID provided. Using data from request body.');
+    }
+    
+    // Final validation before PDF generation
+    if (!invoiceData) {
+      console.error('No invoice data available after processing');
+      return res.status(400).json({ error: 'No valid data provided for PDF generation' });
     }
 
-    console.log('PDF generated successfully, sending to client:', filePath);
-    
-    // Set appropriate headers for direct download
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
-    
-    // Save to database in background (don't wait for it)
+    if (!invoiceData.employee) {
+      console.error('Employee details missing from invoice data');
+      return res.status(400).json({ error: 'Employee details are required for PDF generation' });
+    }
+
     try {
-      // Generate invoice number (timestamp-based)
-      const invoiceNumber = `INV-${Date.now()}`;
+      // Generate the invoice PDF
+      console.log('Calling generateInvoice function...');
+      const filePath = await generateInvoice(invoiceData);
       
-      // Create a new invoice document with minimal fields
-      const newInvoice = new Invoice({
-        invoiceNumber,
-        employee: req.body.employee,
-        tourSummary: req.body.tourSummary,
-        bills: req.body.bills || [],
-        expenses: req.body.expenses || [],
-        dailyAllowance: req.body.dailyAllowance || {},
-        totalAmount: req.body.grandTotal || 0,
-        status: 'pending',
-        createdAt: new Date()
-      });
-
-      // If user is authenticated, add userId
-      if (req.user && req.user._id) {
-        newInvoice.userId = req.user._id;
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        console.error('Generated PDF file not found at path:', filePath);
+        return res.status(500).json({ error: 'Generated invoice file not found' });
       }
 
-      // Save to database without waiting for completion
-      newInvoice.save()
-        .then(() => console.log('Invoice saved to database:', invoiceNumber))
-        .catch(err => console.error('Error saving invoice to database:', err));
-    } catch (dbError) {
-      // Just log database errors but continue with PDF download
-      console.error('Database save error (non-blocking):', dbError);
-    }
-    
-    // Send the file directly
-    fs.createReadStream(filePath).pipe(res);
-    
-    // Clean up the file after sending
-    res.on('finish', () => {
-      console.log('Response finished, cleaning up file');
-      fs.unlink(filePath, (err) => {
-        if (err) console.error('Error deleting file:', err);
+      console.log('PDF generated successfully at path:', filePath);
+      
+      // Set appropriate headers for direct download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+      
+      // Send the file directly
+      const readStream = fs.createReadStream(filePath);
+      
+      // Handle file reading errors
+      readStream.on('error', (streamErr) => {
+        console.error('Error reading generated PDF:', streamErr);
+        // Only send error if headers haven't been sent yet
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Error reading generated PDF file' });
+        }
       });
-    });
-    
+      
+      readStream.pipe(res);
+      
+      // Clean up the file after sending
+      res.on('finish', () => {
+        console.log('Response finished, cleaning up file:', filePath);
+        fs.unlink(filePath, (err) => {
+          if (err) console.error('Error deleting temp PDF file:', err);
+        });
+      });
+    } catch (pdfError) {
+      console.error('Error in PDF generation process:', pdfError);
+      return res.status(500).json({ 
+        error: 'Failed to generate PDF',
+        details: pdfError.message,
+        stack: pdfError.stack
+      });
+    }
   } catch (error) {
-    console.error('Error in direct PDF generation:', error);
+    console.error('Uncaught error in direct-generate-pdf endpoint:', error);
     return res.status(500).json({ 
-      error: 'Failed to generate PDF',
+      error: 'Server error processing PDF generation request',
       details: error.message
     });
   }

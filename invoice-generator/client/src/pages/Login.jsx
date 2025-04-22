@@ -28,65 +28,162 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-  
+
     try {
       const endpoint = isLogin ? 'login' : 'register';
       console.log(`Attempting ${endpoint} with email:`, formData.email);
       
-      const response = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          ...((!isLogin && formData.name) && { name: formData.name })
-        })
-      });
-  
-      const data = await response.json();
-  
-      if (response.ok) {
-        console.log(`${endpoint} successful:`, data);
+      // First, check if the server is reachable
+      try {
+        console.log('Attempting to check server health...');
+        // Use a simpler request that's less likely to have CORS issues
+        const checkResponse = await fetch('http://localhost:5000/health', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json'
+          },
+          // Add timeout to avoid hanging if server is unreachable
+          signal: AbortSignal.timeout(5000) // 5 second timeout
+        });
         
-        if (isLogin) {
-          // Use the auth context login function
-          login(data.user);
-          navigate('/', { replace: true });
+        if (!checkResponse.ok) {
+          const errorText = await checkResponse.text();
+          console.error('Server health check failed with status:', checkResponse.status, errorText);
+          setError(`Server connection issue (status ${checkResponse.status}). Please try again later.`);
+          setIsLoading(false);
+          return;
+        }
+        
+        try {
+          const healthData = await checkResponse.json();
+          console.log('Server health check successful:', healthData);
+        } catch (jsonError) {
+          // Even if JSON parsing fails, we still got a response
+          console.warn('Health check response not JSON:', jsonError);
+        }
+        
+        console.log('Server is reachable, proceeding with authentication');
+      } catch (serverCheckError) {
+        // Check specifically for CORS errors vs other network errors
+        const errorMessage = serverCheckError.message || '';
+        console.error('Server connectivity error:', serverCheckError);
+        
+        if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
+          setError('Cannot connect to the server. Please ensure the server is running.');
+        } else if (errorMessage.includes('Timeout')) {
+          setError('Server connection timed out. Please try again later.');
+        } else if (errorMessage.includes('CORS')) {
+          // If it's a CORS error, we know the server is running but has CORS issues
+          console.log('CORS error detected, server might be running but has CORS issues');
+          // Continue with registration/login attempt anyway, since we can't reliably check health
+          console.log('Continuing despite CORS error on health check');
         } else {
-          // After successful registration, automatically log in
-          console.log('Registration successful, attempting login');
-          const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              email: formData.email,
-              password: formData.password
-            })
-          });
+          setError(`Server connection error: ${errorMessage}`);
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      // Proceed with registration/login with better error handling
+      console.log(`Making ${endpoint} request to http://localhost:5000/api/auth/${endpoint}`);
+      try {
+        const response = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+            ...((!isLogin && formData.name) && { name: formData.name })
+          }),
+          // Add timeout to prevent hanging requests
+          signal: AbortSignal.timeout(10000) // 10 second timeout
+        });
+        
+        // Log response details for debugging
+        console.log(`${endpoint} response status:`, response.status);
+        console.log(`${endpoint} response headers:`, Object.fromEntries([...response.headers.entries()]));
+
+        // Handle different response types properly
+        const contentType = response.headers.get('content-type');
+        let data;
+        
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            console.error('JSON parsing error:', jsonError);
+            const responseText = await response.text();
+            console.error('Response text that failed JSON parsing:', responseText);
+            
+            if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html>')) {
+              throw new Error('Server returned HTML instead of JSON. The server might be down or misconfigured.');
+            } else {
+              throw new Error('Invalid JSON response from server');
+            }
+          }
+        } else {
+          const responseText = await response.text();
+          console.error('Non-JSON response:', responseText);
           
-          const loginData = await loginResponse.json();
-          
-          if (loginResponse.ok) {
-            console.log('Auto-login after registration successful:', loginData);
-            login(loginData.user);
-            navigate('/', { replace: true });
+          if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html>')) {
+            throw new Error('Server returned HTML instead of JSON. Please check your server configuration.');
           } else {
-            setError('Registration successful but automatic login failed. Please log in manually.');
+            throw new Error('Server did not return JSON. Received: ' + (responseText.substring(0, 100) + '...'));
           }
         }
-      } else {
-        console.error(`${endpoint} failed:`, data.error);
-        setError(data.error || (isLogin ? 'Login failed' : 'Registration failed'));
+
+        if (response.ok) {
+          console.log(`${endpoint} successful:`, data);
+          
+          if (isLogin) {
+            // Use the auth context login function
+            login(data.user);
+            navigate('/', { replace: true });
+          } else {
+            // After successful registration, automatically log in
+            console.log('Registration successful, attempting login');
+            
+            try {
+              const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                  email: formData.email,
+                  password: formData.password
+                })
+              });
+              
+              if (loginResponse.ok) {
+                const loginData = await loginResponse.json();
+                console.log('Auto-login after registration successful:', loginData);
+                login(loginData.user);
+                navigate('/', { replace: true });
+              } else {
+                const errorText = await loginResponse.text();
+                console.error('Auto-login failed after registration:', errorText);
+                setError('Registration successful but automatic login failed. Please log in manually.');
+              }
+            } catch (loginError) {
+              console.error('Auto-login exception after registration:', loginError);
+              setError('Registration successful but automatic login failed. Please log in manually.');
+            }
+          }
+        } else {
+          console.error(`${endpoint} failed:`, data?.error || 'Unknown error');
+          setError(data?.error || (isLogin ? 'Login failed' : 'Registration failed'));
+        }
+      } catch (error) {
+        console.error(isLogin ? 'Login error:' : 'Registration error:', error);
+        setError(`An error occurred during ${isLogin ? 'login' : 'registration'}: ${error.message}`);
       }
-    } catch (error) {
-      console.error(isLogin ? 'Login error:' : 'Registration error:', error);
-      setError(`An error occurred during ${isLogin ? 'login' : 'registration'}`);
     } finally {
       setIsLoading(false);
     }

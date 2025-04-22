@@ -195,9 +195,10 @@ const InvoiceHistory = () => {
       setLoading(true);
       console.log('Generating PDF for:', invoiceData._id);
       
+      // Send only the invoice ID for the server to fetch the complete data
       const response = await axios.post(
         'http://localhost:5000/direct-generate-pdf',
-        invoiceData,
+        { _id: invoiceData._id }, // Send only the ID to trigger database lookup
         {
           responseType: 'blob',
           headers: {
