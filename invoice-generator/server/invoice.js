@@ -12,6 +12,20 @@ async function generateInvoice(data) {
         throw new Error('Invalid invoice data provided');
       }
 
+      // Check specifically for agenda items
+      console.log('Agenda items received in generateInvoice:', {
+        hasAgendaItems: !!data.agendaItems,
+        isArray: Array.isArray(data.agendaItems),
+        length: data.agendaItems?.length || 0,
+        itemsSample: Array.isArray(data.agendaItems) ? 
+          data.agendaItems.map(item => ({
+            agendaItem: item.agendaItem,
+            fromDate: item.fromDate,
+            toDate: item.toDate,
+            actionTaken: item.actionTaken
+          })) : 'Not an array'
+      });
+
       // Add a more detailed data inspection
       console.log('Invoice generation started with data structure:', JSON.stringify({
         hasEmployee: !!data.employee,
@@ -101,17 +115,6 @@ async function generateInvoice(data) {
         if (!Array.isArray(data.agendaItems)) {
           console.log('Agenda items array not found, creating empty array');
           data.agendaItems = [];
-        }
-        
-        // Check if we need to generate agenda items from tour details
-        if (data.agendaItems.length === 0 && data.tourSummary && Array.isArray(data.tourSummary.tourDetails) && data.tourSummary.tourDetails.length > 0) {
-          console.log('Creating agenda items from tour details for PDF');
-          data.agendaItems = data.tourSummary.tourDetails.map(detail => ({
-            agendaItem: detail.purpose || 'Tour',
-            fromDate: detail.fromDate,
-            toDate: detail.toDate,
-            actionTaken: (detail.from || '') + ' to ' + (detail.to || '')
-          }));
         }
         
         // Page 1: Basic Details (always generate, don't check for agendaItems)
@@ -299,15 +302,14 @@ function generateBasicDetailsPage(doc, data) {
     headerX += width;
   });
   
-  // Get agenda items directly from the main data structure 
-  // IMPORTANT: Do not create or substitute any values
+  // Use ONLY the exact agenda items provided by the user - don't generate or modify anything
   let agendaItems = [];
 
-  // Only look for agenda items in the main data structure
-  if (Array.isArray(data.agendaItems) && data.agendaItems.length > 0) {
-    // Use agenda items directly without modification
+  // Only use the user's directly entered agenda items - no substitutions or defaults
+  if (Array.isArray(data.agendaItems)) {
+    // Use agenda items exactly as provided - no modifications
     agendaItems = data.agendaItems;
-    console.log('Using exact user-entered agenda items from data.agendaItems:', 
+    console.log('Using exact user-entered agenda items:', 
       JSON.stringify(agendaItems.map(item => ({
         agendaItem: item.agendaItem,
         fromDate: item.fromDate,
@@ -338,14 +340,7 @@ function generateBasicDetailsPage(doc, data) {
   let rowY = startY + 30; // Start right after header
   const rowHeight = 40;
   
-  // Add debugRow function
-  function debugObject(obj, label) {
-    if (!obj) return 'null';
-    if (typeof obj !== 'object') return typeof obj;
-    return `${label || 'Object'} keys: ${Object.keys(obj).join(', ')}`;
-  }
-
-  // Create table rows for agenda items with clear fallbacks
+  // Create table rows for agenda items with no fallbacks - use exact input values
   if (agendaItems && agendaItems.length > 0) {
     console.log(`Drawing ${agendaItems.length} agenda items`);
     // Loop through agenda items
@@ -368,29 +363,34 @@ function generateBasicDetailsPage(doc, data) {
       });
       colX += actualColWidths[0];
       
-      // Agenda Item - use directly from data
-      doc.text(item.agendaItem || '', colX + 5, textY, { 
+      // Use EXACTLY what user entered
+      // Agenda Item
+      const agendaItemText = item.agendaItem || '';
+      doc.text(agendaItemText, colX + 5, textY, { 
         width: actualColWidths[1] - 10,
         ellipsis: true
       });
       colX += actualColWidths[1];
       
-      // From Date - use directly from data, don't format
-      doc.text(item.fromDate || '', colX + 5, textY, {
+      // From Date - exactly as entered
+      const fromDateText = item.fromDate || '';
+      doc.text(fromDateText, colX + 5, textY, {
         width: actualColWidths[2] - 10,
         align: 'center'
       });
       colX += actualColWidths[2];
       
-      // To Date - use directly from data, don't format
-      doc.text(item.toDate || '', colX + 5, textY, {
+      // To Date - exactly as entered
+      const toDateText = item.toDate || '';
+      doc.text(toDateText, colX + 5, textY, {
         width: actualColWidths[3] - 10,
         align: 'center'
       });
       colX += actualColWidths[3];
       
-      // Record note of Action taken - use directly from data
-      doc.text(item.actionTaken || '', colX + 5, textY, {
+      // Record note of Action taken - exactly as entered
+      const actionTakenText = item.actionTaken || '';
+      doc.text(actionTakenText, colX + 5, textY, {
         width: actualColWidths[4] - 10,
         ellipsis: true
       });
@@ -399,8 +399,7 @@ function generateBasicDetailsPage(doc, data) {
       rowY += rowHeight;
     });
   } else {
-    // Always create at least one row even if no agenda items found
-    // Draw a single empty row
+    // Draw a single empty row if no agenda items found
     doc.rect(50, rowY, tableWidth, rowHeight).stroke();
     doc.fontSize(10).font('Helvetica');
     doc.text('No agenda items found.', 150, rowY + 15);
@@ -1202,7 +1201,7 @@ function generateFinalSummary(doc, data) {
     const fourthRowY = thirdRowY + rowHeight;
     const agendaSummary = data.agendaItems && data.agendaItems.length > 0 ? 
                          data.agendaItems[0].agendaItem : 
-                         (data.tourSummary?.tourDetails?.[0]?.purpose || 'N/A');
+                         '';
     
     // First column - Purpose of Journey
     doc.rect(50, fourthRowY, pageWidth * 0.4, rowHeight).stroke();

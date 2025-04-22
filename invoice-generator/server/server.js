@@ -139,7 +139,8 @@ app.post('/generate-invoice', async (req, res) => {
       hasEmployee: !!data.employee,
       hasTourSummary: !!data.tourSummary,
       hasBills: Array.isArray(data.bills),
-      hasExpenses: Array.isArray(data.expenses)
+      hasExpenses: Array.isArray(data.expenses),
+      hasAgendaItems: Array.isArray(data.agendaItems)
     });
 
     // Basic validation only - detailed validation happens in the validation endpoint
@@ -156,6 +157,15 @@ app.post('/generate-invoice', async (req, res) => {
         message: 'Missing required data: employee and tour summary are required'
       });
     }
+
+    // Ensure we're using the user's exact inputs - no substitution or defaults
+    console.log('Using exact user-entered agenda items:', 
+      JSON.stringify(data.agendaItems ? data.agendaItems.map(item => ({
+        agendaItem: item.agendaItem,
+        fromDate: item.fromDate,
+        toDate: item.toDate,
+        actionTaken: item.actionTaken
+      })) : []));
 
     // Generate invoice PDF
     try {
@@ -503,20 +513,24 @@ app.post('/direct-generate-pdf', async (req, res) => {
             invoiceData.tourSummary.tourDetails = [];
           }
           
-          // If no agenda items exist, create them from tour details
-          if (!Array.isArray(invoiceData.agendaItems) || invoiceData.agendaItems.length === 0) {
-            if (invoiceData.tourSummary.tourDetails && invoiceData.tourSummary.tourDetails.length > 0) {
-              console.log('Creating agenda items from tour details');
-              invoiceData.agendaItems = invoiceData.tourSummary.tourDetails.map(detail => ({
-                agendaItem: detail.purpose || 'Tour',
-                fromDate: detail.fromDate,
-                toDate: detail.toDate,
-                actionTaken: (detail.from || '') + ' to ' + (detail.to || '')
-              }));
-            } else {
-              invoiceData.agendaItems = [];
-            }
+          // IMPORTANT: Preserve original agenda items exactly as entered by user
+          // DO NOT create or substitute agenda items from tour details
+          if (!Array.isArray(invoiceData.agendaItems)) {
+            console.log('Agenda items array not found, creating empty array');
+            invoiceData.agendaItems = [];
+          } else {
+            console.log('Using original user-entered agenda items:', 
+              JSON.stringify(invoiceData.agendaItems.map(item => ({
+                agendaItem: item.agendaItem,
+                fromDate: item.fromDate,
+                toDate: item.toDate,
+                actionTaken: item.actionTaken
+              })))
+            );
           }
+          
+          // IMPORTANT: Never generate agenda items from tour details
+          // This would override user input with default values
           
           console.log('Data prepared for PDF generation:', {
             hasEmployee: !!invoiceData.employee,
