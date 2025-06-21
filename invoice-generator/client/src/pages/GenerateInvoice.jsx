@@ -24,6 +24,11 @@ const GenerateInvoice = () => {
     try {
       const data = JSON.parse(savedData);
       console.log('Loaded invoice data:', data);
+      console.log('Checking for agenda items:', {
+        hasAgendaItems: !!data.agendaItems,
+        agendaItemsLength: data.agendaItems?.length || 0,
+        firstAgendaItem: data.agendaItems?.[0] || 'None'
+      });
       setInvoiceData(data);
     } catch (err) {
       console.error('Error parsing invoice data:', err);
@@ -72,6 +77,7 @@ const GenerateInvoice = () => {
             ? [...invoiceData.tourSummary.tourDetails] 
             : []
         },
+        agendaItems: Array.isArray(invoiceData.agendaItems) ? [...invoiceData.agendaItems] : [],
         bills: Array.isArray(invoiceData.bills) ? [...invoiceData.bills] : [],
         expenses: Array.isArray(invoiceData.expenses) ? [...invoiceData.expenses] : [],
         conveyances: Array.isArray(invoiceData.conveyances) ? [...invoiceData.conveyances] : [],

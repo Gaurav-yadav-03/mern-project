@@ -10,6 +10,7 @@ const invoiceSchema = new mongoose.Schema({
   employee: {
     employeeName: String,
     department: String,
+    designation: String,
     tourPeriod: String,
     destination: String,
     fromDate: String,
@@ -22,7 +23,8 @@ const invoiceSchema = new mongoose.Schema({
       modeOfTravel: String,
       from: String,
       to: String,
-      purpose: String
+      purpose: String,
+      contactNumber: String
     }]
   },
   bills: [{
@@ -39,14 +41,32 @@ const invoiceSchema = new mongoose.Schema({
     from: String,
     to: String,
     amount: Number,
+    ticketAmount: Number,
     details: String,
-    class: String
+    class: String,
+    fileUrl: String
+  }],
+  conveyances: [{
+    date: String,
+    place: String,
+    from: String,
+    to: String,
+    mode: String,
+    amount: Number,
+    fileUrl: String
+  }],
+  agendaItems: [{
+    agendaItem: String,
+    fromDate: String,
+    toDate: String,
+    actionTaken: String
   }],
   dailyAllowance: {
     onFor: String,
     hotelBillDays: String,
     daDays: String,
-    daAmount: String
+    daAmount: String,
+    ratePerDay: { type: Number, default: 400 }
   },
   totalBillAmount: Number,
   totalExpenses: Number,

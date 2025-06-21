@@ -1,7 +1,25 @@
 {
+  "name": "invoicely",
+  "version": "1.0.0",
+  "description": "Open-source professional invoice generator for businesses",
+  "main": "server/server.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm start",
+    "client": "cd client && npm run dev",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start"
+  },
+  "keywords": ["invoice", "generator", "open-source", "business", "pdf", "expense-management"],
+  "author": "Invoicely Team",
+  "license": "MIT",
   "dependencies": {
     "express-session": "^1.18.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }

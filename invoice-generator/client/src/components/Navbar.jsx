@@ -52,7 +52,7 @@ const Navbar = () => {
   return (
     <nav className={styles.navbar}>
       <div className={styles.logo}>
-        <Link to="/">NCEL Invoice System</Link>
+        <Link to="/">Invoicely</Link>
       </div>
       
       <button className={styles.menuButton} onClick={toggleMenu}>

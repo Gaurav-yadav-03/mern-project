@@ -21,7 +21,13 @@ const COMMON_CITIES = [
   'Bhopal',
   'Kochi',
   'Guwahati',
-  'Patna'
+  'Patna',
+  'Indore',
+  'Nagpur',
+  'Surat',
+  'Visakhapatnam',
+  'Coimbatore',
+  'Other'
 ];
 
 function TourSummary() {
@@ -202,7 +208,7 @@ function TourSummary() {
   return (
     <div className="container">
       <div className="header">
-        <h1 className="title">National Cooperative Export Limited</h1>
+        <h1 className="title">Professional Invoice Generator</h1>
         <h2 className="subtitle">Tour Programme</h2>
       </div>
 

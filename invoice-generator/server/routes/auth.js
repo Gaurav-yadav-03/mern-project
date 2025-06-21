@@ -182,6 +182,65 @@ router.post('/signup', async (req, res) => {
     res.status(500).json({ error: 'Signup failed', details: error.message });
   }
 });
+
+// Add a 'register' route as an alias for 'signup'
+router.post('/register', async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Create new user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      name
+    });
+
+    // Log the user in
+    req.logIn(user, (err) => {
+      if (err) {
+        console.error('Login Error:', err);
+        return res.status(500).json({ error: 'Login failed after signup' });
+      }
+      
+      // Set user data in session with _id instead of id
+      req.session.user = {
+        _id: user._id,
+        name: user.name,
+        email: user.email
+      };
+      
+      // Save session before sending response
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ error: 'Session save failed' });
+        }
+        res.json({ 
+          user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email
+          }
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'Signup failed', details: error.message });
+  }
+});
+
 router.get('/verify', authenticateToken, async (req, res) => {
   try {
     // Return user data without sensitive information

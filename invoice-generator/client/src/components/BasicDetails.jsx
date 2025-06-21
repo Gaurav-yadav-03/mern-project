@@ -82,7 +82,7 @@ const BasicDetails = ({ data, onChange, onNext }) => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h2 className={styles.title}>NCEL-Delhi</h2>
+        <h2 className={styles.title}>Professional Invoice Generator</h2>
         <h3 className={styles.subtitle}>Detailed Agenda & Record Note of Tour Undertaken</h3>
       </div>
 
