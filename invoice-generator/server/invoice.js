@@ -223,7 +223,7 @@ function generateBasicDetailsPage(doc, data) {
     console.log("First employee agenda item sample:", JSON.stringify(data.employee.agendaItems[0]));
   }
   
-  doc.fontSize(12).font('Helvetica-Bold').text('NCEL-Delhi', { align: 'center' });
+  doc.fontSize(12).font('Helvetica-Bold').text('Professional Invoice Generator', { align: 'center' });
   doc.moveDown(1);
   doc.fontSize(12).text('Detailed Agenda & Record Note of Tour Undertaken', { align: 'center' });
   doc.moveDown(0.5);
@@ -1415,7 +1415,7 @@ function generateFinalSummary(doc, data) {
     doc.text('Less: (A) Advance From: DTO', 55, advanceRowY + 5);
     
     doc.rect(50 + pageWidth * 0.5, advanceRowY, pageWidth * 0.5, rowHeight).stroke();
-    doc.text('(B) Ticket from: NCEL', 55 + pageWidth * 0.5 + 5, advanceRowY + 5);
+    doc.text('(B) Ticket from: Company', 55 + pageWidth * 0.5 + 5, advanceRowY + 5);
     
     // Total payable row
     const totalPayableRowY = advanceRowY + rowHeight;

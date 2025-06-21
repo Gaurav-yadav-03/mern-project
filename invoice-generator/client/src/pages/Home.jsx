@@ -9,7 +9,7 @@ const Home = () => {
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.logo}>
-          <span className={styles.logoText}>NCEL</span>
+          <span className={styles.logoText}>Fast Invoice Generator</span>
           <span className={styles.logoSubtext}>Invoice Generator</span>
         </div>
         <nav className={styles.nav}>
@@ -101,7 +101,7 @@ const Home = () => {
       </section>
 
       <footer className={styles.footer}>
-        <p>© {new Date().getFullYear()} NCEL Invoice Generator. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} Invoicely Invoice Generator. All rights reserved.</p>
       </footer>
     </div>
   );

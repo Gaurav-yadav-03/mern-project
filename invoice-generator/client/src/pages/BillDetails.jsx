@@ -24,7 +24,13 @@ const COMMON_CITIES = [
   'Bhopal',
   'Kochi',
   'Guwahati',
-  'Patna'
+  'Patna',
+  'Indore',
+  'Nagpur',
+  'Surat',
+  'Visakhapatnam',
+  'Coimbatore',
+  'Other'
 ];
 
 const BillDetails = () => {

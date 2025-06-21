@@ -24,7 +24,8 @@ const COMMON_CITIES = [
   'Nagpur',
   'Surat',
   'Visakhapatnam',
-  'Coimbatore'
+  'Coimbatore',
+  'Other'
 ];
 
 function Expenses() {
