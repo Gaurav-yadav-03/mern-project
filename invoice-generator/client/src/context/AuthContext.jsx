@@ -3,6 +3,8 @@ import axios from 'axios';
 
 const AuthContext = createContext(null);
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 // Utility function to normalize user data structure
 const normalizeUserData = (userData) => {
   if (!userData) return null;
@@ -32,7 +34,7 @@ export const AuthProvider = ({ children }) => {
         
         // First check with server
         try {
-          const response = await axios.get('http://localhost:5000/api/auth/status', {
+          const response = await axios.get(`${API_BASE_URL}/api/auth/status`, {
             withCredentials: true
           });
           
@@ -118,7 +120,7 @@ export const AuthProvider = ({ children }) => {
     console.log('Logout initiated');
     try {
       // Call server logout endpoint
-      await axios.post('http://localhost:5000/api/auth/logout', {}, {
+      await axios.post(`${API_BASE_URL}/api/auth/logout`, {}, {
         withCredentials: true
       });
       console.log('Server logout successful');

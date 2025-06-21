@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import styles from './Login.module.css';
 import { useAuth } from '../context/AuthContext';
 
+// Helper to get API base URL from environment
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 const Login = () => {
   const navigate = useNavigate();
   const { isAuthenticated, loading, login } = useAuth();
@@ -37,7 +40,7 @@ const Login = () => {
       try {
         console.log('Attempting to check server health...');
         // Use a simpler request that's less likely to have CORS issues
-        const checkResponse = await fetch('http://localhost:5000/health', {
+        const checkResponse = await fetch(`${API_BASE_URL}/health`, {
           method: 'GET',
           credentials: 'include',
           headers: {
@@ -86,9 +89,9 @@ const Login = () => {
       }
       
       // Proceed with registration/login with better error handling
-      console.log(`Making ${endpoint} request to http://localhost:5000/api/auth/${endpoint}`);
+      console.log(`Making ${endpoint} request to ${API_BASE_URL}/api/auth/${endpoint}`);
       try {
-        const response = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
+        const response = await fetch(`${API_BASE_URL}/api/auth/${endpoint}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -149,7 +152,7 @@ const Login = () => {
             console.log('Registration successful, attempting login');
             
             try {
-              const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
+              const loginResponse = await fetch(`${API_BASE_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -191,7 +194,7 @@ const Login = () => {
 
   const handleGoogleLogin = () => {
     console.log('Redirecting to Google OAuth login');
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
   };
 
   const handleInputChange = (e) => {

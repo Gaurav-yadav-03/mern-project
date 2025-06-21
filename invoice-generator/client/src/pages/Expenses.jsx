@@ -77,6 +77,8 @@ function Expenses() {
 
   const [selectedTicketFileName, setSelectedTicketFileName] = useState('');
 
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     // Get data from localStorage
     const savedData = JSON.parse(localStorage.getItem('invoiceData') || '{}');
@@ -830,7 +832,7 @@ function Expenses() {
                           href="#" 
                           onClick={(e) => {
                             e.preventDefault();
-                            window.open(`http://localhost:5000${expense.fileUrl}`, '_blank');
+                            window.open(`${API_BASE_URL}${expense.fileUrl}`, '_blank');
                           }}
                           style={{ color: 'blue', textDecoration: 'underline' }}
                         >

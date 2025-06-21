@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './AdminDashboard.module.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('employees');
   const [employees, setEmployees] = useState([]);
@@ -14,7 +16,7 @@ const AdminDashboard = () => {
     // Check if user is admin
     const checkAdmin = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/auth/status', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/status`, {
           credentials: 'include'
         });
         const data = await response.json();
@@ -48,9 +50,9 @@ const AdminDashboard = () => {
     try {
       let url = '';
       if (tab === 'employees') {
-        url = 'http://localhost:5000/api/admin/employees';
+        url = `${API_BASE_URL}/api/admin/employees`;
       } else if (tab === 'invoices') {
-        url = 'http://localhost:5000/api/admin/invoices';
+        url = `${API_BASE_URL}/api/admin/invoices`;
       }
       
       console.log('Fetching from:', url);
@@ -88,7 +90,7 @@ const AdminDashboard = () => {
   
   const updateInvoiceStatus = async (invoiceId, status, remarks) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/invoices/${invoiceId}/status`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/invoices/${invoiceId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
