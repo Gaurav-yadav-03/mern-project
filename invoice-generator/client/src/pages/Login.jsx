@@ -4,7 +4,7 @@ import styles from './Login.module.css';
 import { useAuth } from '../context/AuthContext';
 
 // Helper to get API base URL from environment
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const Login = () => {
   const navigate = useNavigate();
