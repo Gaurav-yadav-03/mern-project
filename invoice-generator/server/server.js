@@ -19,10 +19,22 @@ const authRoutes = require('./routes/auth');
 
 const app = express();
 
-// Update CORS configuration for better cross-origin support
-// Replace the existing CORS configuration with more comprehensive settings
+const allowedOrigins = [
+  'https://mernproject-blue.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
 const corsOptions = {
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
@@ -35,7 +47,10 @@ app.use(cors(corsOptions));
 
 // Also add a middleware to ensure CORS headers are set on all responses
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost:5173');
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header(
     'Access-Control-Allow-Headers',
