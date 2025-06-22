@@ -397,8 +397,7 @@ const BillDetails = () => {
     if (fileUrl) {
       // Check if URL is a relative path
       if (!fileUrl.startsWith('http')) {
-        // Prepend server URL for relative paths
-        window.open(`http://localhost:5000${fileUrl}`, '_blank');
+        window.open(`${API_BASE_URL}${fileUrl}`, '_blank');
       } else {
         window.open(fileUrl, '_blank');
       }

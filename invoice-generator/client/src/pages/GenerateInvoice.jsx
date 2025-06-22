@@ -135,7 +135,7 @@ const GenerateInvoice = () => {
         try {
           console.log('Saving invoice to database...');
           const saveResponse = await axios.post(
-            'http://localhost:5000/invoice',
+            `${API_BASE_URL}/invoice`,
             validationData,
             {
               withCredentials: true
