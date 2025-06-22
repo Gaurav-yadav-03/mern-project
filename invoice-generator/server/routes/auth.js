@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken'); // Add this line
 const User = require('../models/User'); // Add this line
 const { authenticateToken } = require('../middleware/auth');
 
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
 // Google authentication route
 router.get('/google',
   passport.authenticate('google', { 
@@ -20,18 +22,18 @@ router.get('/google/callback', (req, res, next) => {
   passport.authenticate('google', async (err, user, info) => {
     if (err) {
       console.error('Authentication Error:', err);
-      return res.redirect('http://localhost:5173/login?error=auth_failed');
+      return res.redirect(`${FRONTEND_URL}/login?error=auth_failed`);
     }
     
     if (!user) {
       console.error('No user found');
-      return res.redirect('http://localhost:5173/login?error=no_user');
+      return res.redirect(`${FRONTEND_URL}/login?error=no_user`);
     }
 
     req.logIn(user, (loginErr) => {
       if (loginErr) {
         console.error('Login Error:', loginErr);
-        return res.redirect('http://localhost:5173/login?error=login_failed');
+        return res.redirect(`${FRONTEND_URL}/login?error=login_failed`);
       }
       
       // Set user data in session with correct userId field
@@ -50,10 +52,10 @@ router.get('/google/callback', (req, res, next) => {
       req.session.save((err) => {
         if (err) {
           console.error('Session save error:', err);
-          return res.redirect('http://localhost:5173/login?error=session_error');
+          return res.redirect(`${FRONTEND_URL}/login?error=session_error`);
         }
         console.log('Session saved successfully, redirecting to home page');
-        return res.redirect('http://localhost:5173');
+        return res.redirect(`${FRONTEND_URL}`);
       });
     });
   })(req, res, next);

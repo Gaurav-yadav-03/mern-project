@@ -123,6 +123,7 @@ app.use('/api/admin', adminRoutes);
 
 // Serve static files from the React app
 // Replace the existing static file serving code with this
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/build')));
   app.get('*', (req, res) => {
@@ -132,7 +133,7 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'public')));
   // Handle React routing in development
   app.get('*', (req, res) => {
-    res.redirect('http://localhost:5173');
+    res.redirect(FRONTEND_URL);
   });
 }
 
@@ -365,7 +366,10 @@ app.post('/generate-invoice/validate', async (req, res) => {
 // Health check endpoint
 app.get('/health', async (req, res) => {
   // Set CORS headers directly on this response
-  res.header('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost:5173');
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
   res.header('Access-Control-Allow-Credentials', 'true');
   
   try {

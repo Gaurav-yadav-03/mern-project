@@ -6,10 +6,12 @@ const AdminEmployees = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/admin/employees', {
+        const response = await fetch(`${API_BASE_URL}/api/admin/employees`, {
           credentials: 'include'
         });
         

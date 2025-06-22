@@ -11,6 +11,7 @@ const EmployerInvoices = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     // Check if user is admin
@@ -24,8 +25,8 @@ const EmployerInvoices = () => {
     const fetchData = async () => {
       try {
         const [employerResponse, invoicesResponse] = await Promise.all([
-          axios.get(`http://localhost:5000/api/employers/${employerId}`),
-          axios.get(`http://localhost:5000/api/employers/${employerId}/invoices`)
+          axios.get(`${API_BASE_URL}/api/employers/${employerId}`),
+          axios.get(`${API_BASE_URL}/api/employers/${employerId}/invoices`)
         ]);
         setEmployer(employerResponse.data);
         setInvoices(invoicesResponse.data);

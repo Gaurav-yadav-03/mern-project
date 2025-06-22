@@ -1,9 +1,18 @@
 const express = require('express');
 const router = express.Router();
 
+const allowedOrigins = [
+  'https://mernproject-blue.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
 // Add CORS middleware for this route
 router.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');

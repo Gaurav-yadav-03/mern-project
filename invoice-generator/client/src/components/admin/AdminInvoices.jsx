@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styles from './AdminComponents.module.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 const AdminInvoices = () => {
   const [invoices, setInvoices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -14,7 +16,7 @@ const AdminInvoices = () => {
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/admin/invoices', {
+        const response = await fetch(`${API_BASE_URL}/api/admin/invoices`, {
           credentials: 'include'
         });
         
@@ -46,7 +48,7 @@ const AdminInvoices = () => {
     if (!selectedInvoice || !statusUpdate.status) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/invoices/${selectedInvoice._id}/status`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/invoices/${selectedInvoice._id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

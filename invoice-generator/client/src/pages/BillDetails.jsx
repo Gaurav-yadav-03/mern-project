@@ -33,6 +33,8 @@ const COMMON_CITIES = [
   'Other'
 ];
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 const BillDetails = () => {
   const navigate = useNavigate();
   const [bills, setBills] = useState([]);
@@ -219,7 +221,7 @@ const BillDetails = () => {
         console.log('Uploading file:', newBill.file.name, 'size:', newBill.file.size, 'type:', newBill.file.type);
         
         try {
-          const response = await axios.post('http://localhost:5000/upload/upload', formData, {
+          const response = await axios.post(`${API_BASE_URL}/upload/upload`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
             }
@@ -290,7 +292,7 @@ const BillDetails = () => {
         console.log('Uploading conveyance file:', newConveyance.file.name, 'size:', newConveyance.file.size, 'type:', newConveyance.file.type);
         
         try {
-          const response = await axios.post('http://localhost:5000/upload/upload', formData, {
+          const response = await axios.post(`${API_BASE_URL}/upload/upload`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
             }
