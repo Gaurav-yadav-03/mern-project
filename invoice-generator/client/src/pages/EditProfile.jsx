@@ -18,13 +18,15 @@ const EditProfile = () => {
   });
   const [preview, setPreview] = useState(null);
 
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     fetchUserProfile();
   }, []);
 
   const fetchUserProfile = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/user/profile', {
+      const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -95,7 +97,7 @@ const EditProfile = () => {
     }
   
     try {
-      const response = await fetch('http://localhost:5000/api/user/profile/update', {
+      const response = await fetch(`${API_BASE_URL}/api/user/profile/update`, {
         method: 'PUT',
         credentials: 'include',
         body: formData

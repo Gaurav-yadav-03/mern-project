@@ -304,7 +304,7 @@ function Expenses() {
         const formData = new FormData();
         formData.append('bill', newExpense.file);
         
-        const response = await axios.post('http://localhost:5000/upload/upload', formData, {
+        const response = await axios.post(`${API_BASE_URL}/upload/upload`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }

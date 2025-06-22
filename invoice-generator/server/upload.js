@@ -46,6 +46,8 @@ const upload = multer({
   }
 });
 
+const BACKEND_URL = process.env.BACKEND_URL || '';
+
 // Handle bill uploads
 router.post('/bill', upload.single('bill'), (req, res) => {
   console.log('Received bill upload request');
@@ -59,7 +61,7 @@ router.post('/bill', upload.single('bill'), (req, res) => {
     }
 
     // Create absolute URL for the file
-    const fileUrl = `http://localhost:5000/uploads/bills/${req.file.filename}`;
+    const fileUrl = `${BACKEND_URL}/uploads/bills/${req.file.filename}`;
     console.log('File uploaded successfully:', fileUrl);
     res.json({ 
       success: true, 
@@ -80,7 +82,7 @@ router.post('/', upload.single('file'), (req, res) => {
     }
 
     // Create absolute URL for the file
-    const fileUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+    const fileUrl = `${BACKEND_URL}/uploads/${req.file.filename}`;
     res.json({ 
       success: true, 
       fileUrl,

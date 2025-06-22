@@ -4,7 +4,7 @@ const User = require('../models/User');
 require('dotenv').config();
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/invoice-generator')
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB connected for admin creation'))
   .catch(err => console.error('MongoDB connection error:', err));
 

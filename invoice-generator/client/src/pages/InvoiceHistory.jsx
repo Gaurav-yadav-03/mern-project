@@ -20,6 +20,7 @@ const InvoiceHistory = () => {
   const [invoiceToDelete, setInvoiceToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     // Only fetch invoices if the user is authenticated
@@ -44,7 +45,7 @@ const InvoiceHistory = () => {
       }
       
       // Update the endpoint to fetch only user's invoices
-      const response = await axios.get(`http://localhost:5000/invoice/user/${userId}`, {
+      const response = await axios.get(`${API_BASE_URL}/invoice/user/${userId}`, {
         withCredentials: true
       });
       
@@ -90,7 +91,7 @@ const InvoiceHistory = () => {
       setLoading(true);
       console.log('Attempting to delete invoice with ID:', invoiceToDelete._id);
       
-      const response = await axios.delete(`http://localhost:5000/invoice/${invoiceToDelete._id}`, {
+      const response = await axios.delete(`${API_BASE_URL}/invoice/${invoiceToDelete._id}`, {
         headers: {
           'Content-Type': 'application/json'
         },
@@ -197,7 +198,7 @@ const InvoiceHistory = () => {
       
       // Send only the invoice ID for the server to fetch the complete data
       const response = await axios.post(
-        'http://localhost:5000/direct-generate-pdf',
+        `${API_BASE_URL}/direct-generate-pdf`,
         { _id: invoiceData._id }, // Send only the ID to trigger database lookup
         {
           responseType: 'blob',
@@ -272,7 +273,7 @@ const InvoiceHistory = () => {
     );
   }
 
-  console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
+  console.log('VITE_API_URL:', API_BASE_URL);
 
   return (
     <div className={styles.container}>

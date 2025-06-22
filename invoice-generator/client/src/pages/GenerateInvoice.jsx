@@ -5,6 +5,8 @@ import styles from './GenerateInvoice.module.css';
 import { useAuth } from '../context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 const GenerateInvoice = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -100,7 +102,7 @@ const GenerateInvoice = () => {
 
       // First validate the data
       const validationResponse = await axios.post(
-        'http://localhost:5000/generate-invoice/validate',
+        `${API_BASE_URL}/generate-invoice/validate`,
         validationData
       );
 
@@ -112,7 +114,7 @@ const GenerateInvoice = () => {
         
         // Use the same validated data for PDF generation
         const response = await axios.post(
-          'http://localhost:5000/generate-invoice',
+          `${API_BASE_URL}/generate-invoice`,
           validationData,
           {
             responseType: 'blob'
