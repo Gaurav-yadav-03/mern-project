@@ -52,11 +52,11 @@ const EmployerInvoices = () => {
 
   const handleStatusChange = async (invoiceId, newStatus) => {
     try {
-      await axios.put(`http://localhost:5000/api/invoices/${invoiceId}/status`, {
+      await axios.put(`${API_BASE_URL}/api/invoices/${invoiceId}/status`, {
         status: newStatus
       });
       // Refresh invoices
-      const response = await axios.get(`http://localhost:5000/api/employers/${employerId}/invoices`);
+      const response = await axios.get(`${API_BASE_URL}/api/employers/${employerId}/invoices`);
       setInvoices(response.data);
     } catch (err) {
       setError('Failed to update invoice status');
