@@ -2,7 +2,6 @@
 
 <p align="center">
   <a href="https://mernproject-blue.vercel.app" target="_blank"><strong>🌐 Live Demo</strong></a> • 
-  <a href="https://mern-project-lrbl.onrender.com" target="_blank"><strong>🔗 Backend API</strong></a>
 </p>
 
 <p align="center">
