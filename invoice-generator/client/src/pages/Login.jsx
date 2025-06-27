@@ -39,48 +39,37 @@ const Login = () => {
       // First, check if the server is reachable
       try {
         console.log('Attempting to check server health...');
-        // Use a simpler request that's less likely to have CORS issues
+        // Use the backend API URL for health check
         const checkResponse = await fetch(`${API_BASE_URL}/health`, {
           method: 'GET',
           credentials: 'include',
           headers: {
             'Accept': 'application/json'
           },
-          // Add timeout to avoid hanging if server is unreachable
           signal: AbortSignal.timeout(5000) // 5 second timeout
         });
-        
         if (!checkResponse.ok) {
           const errorText = await checkResponse.text();
-          console.error('Server health check failed with status:', checkResponse.status, errorText);
           setError(`Server connection issue (status ${checkResponse.status}). Please try again later.`);
           setIsLoading(false);
           return;
         }
-        
         try {
           const healthData = await checkResponse.json();
           console.log('Server health check successful:', healthData);
         } catch (jsonError) {
           // Even if JSON parsing fails, we still got a response
-          console.warn('Health check response not JSON:', jsonError);
         }
-        
-        console.log('Server is reachable, proceeding with authentication');
+        // Server is reachable, proceed
       } catch (serverCheckError) {
-        // Check specifically for CORS errors vs other network errors
+        // Handle CORS/network errors gracefully
         const errorMessage = serverCheckError.message || '';
-        console.error('Server connectivity error:', serverCheckError);
-        
         if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
           setError('Cannot connect to the server. Please ensure the server is running.');
         } else if (errorMessage.includes('Timeout')) {
           setError('Server connection timed out. Please try again later.');
         } else if (errorMessage.includes('CORS')) {
-          // If it's a CORS error, we know the server is running but has CORS issues
-          console.log('CORS error detected, server might be running but has CORS issues');
-          // Continue with registration/login attempt anyway, since we can't reliably check health
-          console.log('Continuing despite CORS error on health check');
+          // CORS error, continue with login attempt
         } else {
           setError(`Server connection error: ${errorMessage}`);
           setIsLoading(false);
