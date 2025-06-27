@@ -36,18 +36,6 @@ router.get('/google/callback', (req, res, next) => {
         return res.redirect(`${FRONTEND_URL}/login?error=login_failed`);
       }
       
-      // Set user data in session with correct userId field
-      req.session.user = {
-        _id: user._id,  // This is the key change - use _id instead of id
-        name: user.name,
-        email: user.email,
-        picture: user.picture,
-        isAdmin: user.isAdmin || false
-      };
-      
-      // Log session data for debugging
-      console.log('Session user data set:', req.session.user);
-      
       // Save session before redirect
       req.session.save((err) => {
         if (err) {
@@ -71,36 +59,19 @@ router.get('/google/callback', (req, res, next) => {
 
 // Status check endpoint
 router.get('/status', (req, res) => {
-  console.log('Auth status check - Session:', req.session);
-  console.log('Auth status check - isAuthenticated:', req.isAuthenticated());
-  console.log('Auth status check - user:', req.user);
-  console.log('Auth status check - session user:', req.session?.user);
-
-  // Check if user is authenticated through Passport
+  // Only check Passport's req.user
   if (req.isAuthenticated() && req.user) {
-    console.log('User is authenticated via Passport');
     res.json({
       isAuthenticated: true,
       user: {
-        _id: req.user._id,  // Use _id consistently
+        _id: req.user._id,
         name: req.user.name,
         email: req.user.email,
         picture: req.user.picture || null,
         isAdmin: req.user.isAdmin || false
       }
     });
-  } 
-  // Fallback to session-based authentication
-  else if (req.session && req.session.user) {
-    console.log('User is authenticated via session');
-    res.json({
-      isAuthenticated: true,
-      user: req.session.user
-    });
-  } 
-  // Not authenticated
-  else {
-    console.log('User is not authenticated');
+  } else {
     res.json({ isAuthenticated: false, user: null });
   }
 });
@@ -165,13 +136,6 @@ router.post('/signup', async (req, res) => {
         return res.status(500).json({ error: 'Login failed after signup' });
       }
       
-      // Set user data in session with _id instead of id
-      req.session.user = {
-        _id: user._id,
-        name: user.name,
-        email: user.email
-      };
-      
       // Save session before sending response
       req.session.save((err) => {
         if (err) {
@@ -222,12 +186,6 @@ router.post('/register', async (req, res) => {
         console.error('Login Error:', err);
         return res.status(500).json({ error: 'Login failed after signup' });
       }
-      // Set user data in session with _id instead of id
-      req.session.user = {
-        _id: user._id,
-        name: user.name,
-        email: user.email
-      };
       // Save session before sending response
       req.session.save((err) => {
         if (err) {
@@ -298,14 +256,6 @@ router.post('/login', async (req, res) => {
         return res.status(500).json({ error: 'Login failed' });
       }
       
-      // Set user data in session including isAdmin flag with _id instead of id
-      req.session.user = {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        picture: user.picture,
-        isAdmin: user.isAdmin
-      };
       // Save session before sending response
       req.session.save((err) => {
         if (err) {
