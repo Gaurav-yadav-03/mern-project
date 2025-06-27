@@ -55,6 +55,14 @@ router.get('/google/callback', (req, res, next) => {
           return res.redirect(`${FRONTEND_URL}/login?error=session_error`);
         }
         console.log('Session saved successfully, redirecting to home page');
+        // Set cookie options for cross-site
+        res.cookie('connect.sid', req.sessionID, {
+          path: '/',
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none',
+          maxAge: 24 * 60 * 60 * 1000
+        });
         return res.redirect(`${FRONTEND_URL}`);
       });
     });
@@ -115,12 +123,12 @@ router.post('/logout', (req, res) => {
       return res.status(500).json({ error: 'Logout failed', details: err.message });
     }
 
-    // Clear the session cookie
+    // Clear the session cookie for cross-site
     res.clearCookie('connect.sid', {
       path: '/',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      secure: true, // Always true for cross-site
+      sameSite: 'none' // Required for cross-site
     });
 
     // Send success response
@@ -214,20 +222,26 @@ router.post('/register', async (req, res) => {
         console.error('Login Error:', err);
         return res.status(500).json({ error: 'Login failed after signup' });
       }
-      
       // Set user data in session with _id instead of id
       req.session.user = {
         _id: user._id,
         name: user.name,
         email: user.email
       };
-      
       // Save session before sending response
       req.session.save((err) => {
         if (err) {
           console.error('Session save error:', err);
           return res.status(500).json({ error: 'Session save failed' });
         }
+        // Set cookie options for cross-site
+        res.cookie('connect.sid', req.sessionID, {
+          path: '/',
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none',
+          maxAge: 24 * 60 * 60 * 1000
+        });
         res.json({ 
           user: {
             _id: user._id,
@@ -292,14 +306,20 @@ router.post('/login', async (req, res) => {
         picture: user.picture,
         isAdmin: user.isAdmin
       };
-      
       // Save session before sending response
       req.session.save((err) => {
         if (err) {
           console.error('Session save error:', err);
           return res.status(500).json({ error: 'Session save failed' });
         }
-        
+        // Set cookie options for cross-site
+        res.cookie('connect.sid', req.sessionID, {
+          path: '/',
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none',
+          maxAge: 24 * 60 * 60 * 1000
+        });
         // Return user info with isAdmin flag and _id instead of id
         res.json({ 
           user: {

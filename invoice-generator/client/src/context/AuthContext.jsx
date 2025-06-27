@@ -27,81 +27,50 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
+    // Instant load from localStorage for fast Navbar
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        const normalizedUserData = normalizeUserData(userData);
+        setUser(normalizedUserData);
+        setIsAuthenticated(true);
+        setLoading(false); // Show Navbar instantly
+      } catch (e) {
+        localStorage.removeItem('user');
+        setUser(null);
+        setIsAuthenticated(false);
+        setLoading(false);
+      }
+    }
+    // Then check with server in background
     const checkAuth = async () => {
       try {
-        console.log('Checking authentication status...');
-        setLoading(true);
-        
-        // First check with server
-        try {
-          const response = await axios.get(`${API_BASE_URL}/api/auth/status`, {
-            withCredentials: true
-          });
-          
-          console.log('Server auth response:', response.data);
-          
-          if (response.data.isAuthenticated && response.data.user) {
-            console.log('User is authenticated according to server');
-            
-            // Normalize user data to ensure consistent field naming
-            const normalizedUserData = normalizeUserData(response.data.user);
-            console.log('Normalized user data:', normalizedUserData);
-            
-            setUser(normalizedUserData);
-            setIsAuthenticated(true);
-            
-            // Update localStorage with latest user data
-            localStorage.setItem('user', JSON.stringify(normalizedUserData));
-          } else {
-            console.log('User is not authenticated according to server');
-            // Check if user data exists in localStorage as fallback
-            const storedUser = localStorage.getItem('user');
-            
-            if (storedUser) {
-              console.log('Found stored user data, clearing it');
-              // Clear invalid localStorage data
-              localStorage.removeItem('user');
-            }
-            
-            setUser(null);
-            setIsAuthenticated(false);
-          }
-        } catch (err) {
-          console.error('Server auth check failed:', err);
-          
-          // Fallback to localStorage if server is unreachable
-          const storedUser = localStorage.getItem('user');
-          
-          if (storedUser) {
-            console.log('Using stored user data as fallback');
-            try {
-              const userData = JSON.parse(storedUser);
-              const normalizedUserData = normalizeUserData(userData);
-              console.log('Normalized stored user data:', normalizedUserData);
-              setUser(normalizedUserData);
-              setIsAuthenticated(true);
-            } catch (parseError) {
-              console.error('Error parsing stored user data:', parseError);
-              localStorage.removeItem('user');
-              setUser(null);
-              setIsAuthenticated(false);
-            }
-          } else {
-            setUser(null);
-            setIsAuthenticated(false);
-          }
+        const response = await axios.get(`${API_BASE_URL}/api/auth/status`, {
+          withCredentials: true
+        });
+        if (response.data.isAuthenticated && response.data.user) {
+          const normalizedUserData = normalizeUserData(response.data.user);
+          setUser(normalizedUserData);
+          setIsAuthenticated(true);
+          localStorage.setItem('user', JSON.stringify(normalizedUserData));
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
+          localStorage.removeItem('user');
         }
-      } catch (error) {
-        console.error('Auth check error:', error);
-        setIsAuthenticated(false);
+      } catch (err) {
         setUser(null);
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
     };
-
     checkAuth();
   }, []);
+
+  // Ensure all axios requests use withCredentials: true
+  axios.defaults.withCredentials = true;
 
   const login = (userData, token) => {
     console.log('Login called with user data:', userData);

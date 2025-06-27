@@ -45,7 +45,7 @@ const corsOptions = {
 // Apply CORS with options
 app.use(cors(corsOptions));
 
-// Also add a middleware to ensure CORS headers are set on all responses
+// Ensure CORS headers are set on all responses
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
@@ -57,12 +57,10 @@ app.use((req, res, next) => {
     'Origin, X-Requested-With, Content-Type, Accept, Authorization'
   );
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
-  
   next();
 });
 
@@ -76,8 +74,9 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true,
-    sameSite: 'none',
+    secure: true, // Always true for cross-site cookies in production
+    sameSite: 'none', // Required for cross-site cookies
+    httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   },
   store: MongoStore.create({
