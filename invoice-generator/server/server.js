@@ -11,6 +11,8 @@ const MongoStore = require('connect-mongo');
 require('dotenv').config();
 const { generateInvoice } = require('./invoice');
 const Invoice = require('./models/Invoice');
+const cookieParser = require('cookie-parser');
+
 
 // Import routes
 const uploadRoutes = require('./routes/upload');
@@ -44,7 +46,6 @@ const corsOptions = {
 
 // Apply CORS with options
 app.use(cors(corsOptions));
-app.use(cookieParser());
 
 // Ensure CORS headers are set on all responses
 app.use((req, res, next) => {
