@@ -11,6 +11,7 @@ const MongoStore = require('connect-mongo');
 require('dotenv').config();
 const { generateInvoice } = require('./invoice');
 const Invoice = require('./models/Invoice');
+const { ClerkExpressRequireAuth } = require('@clerk/clerk-sdk-node');
 
 
 // Import routes
@@ -691,4 +692,9 @@ app.get('/debug-file-paths', (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Error checking paths', details: error.message });
   }
+});
+
+// Example protected route:
+app.use('/api/protected', ClerkExpressRequireAuth(), (req, res) => {
+  res.json({ message: 'You are authenticated!', userId: req.auth.userId });
 });
