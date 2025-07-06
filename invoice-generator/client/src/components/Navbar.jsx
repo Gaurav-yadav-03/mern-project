@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './Navbar.module.css';
 import { useAuth } from '../context/AuthContext';
-import { UserButton } from '@clerk/clerk-react';
+import { UserButton, useUser } from '@clerk/clerk-react';
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, loading, logout } = useAuth();
+  const { user: clerkUser, isSignedIn } = useUser();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   
@@ -129,6 +130,11 @@ const Navbar = () => {
           <Link to="/login" className={`${styles.navLink} ${isActive('/login') ? styles.active : ''}`}>
             Login/Signup
           </Link>
+        )}
+        {isSignedIn && (
+          <span style={{ marginRight: 12, fontWeight: 500 }}>
+            {clerkUser?.fullName || clerkUser?.username || clerkUser?.emailAddress}
+          </span>
         )}
         <UserButton afterSignOutUrl="/login" />
       </div>
