@@ -39,42 +39,22 @@ const Login = () => {
       // First, check if the server is reachable
       try {
         console.log('Attempting to check server health...');
-        // Use the backend API URL for health check
         const checkResponse = await fetch(`${API_BASE_URL}/health`, {
           method: 'GET',
           credentials: 'include',
-          headers: {
-            'Accept': 'application/json'
-          },
-          signal: AbortSignal.timeout(5000) // 5 second timeout
+          headers: { 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(5000)
         });
         if (!checkResponse.ok) {
-          const errorText = await checkResponse.text();
           setError(`Server connection issue (status ${checkResponse.status}). Please try again later.`);
           setIsLoading(false);
           return;
         }
         try {
-          const healthData = await checkResponse.json();
-          console.log('Server health check successful:', healthData);
-        } catch (jsonError) {
-          // Even if JSON parsing fails, we still got a response
-        }
-        // Server is reachable, proceed
+          await checkResponse.json();
+        } catch (jsonError) {}
       } catch (serverCheckError) {
-        // Handle CORS/network errors gracefully
-        const errorMessage = serverCheckError.message || '';
-        if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
-          setError('Cannot connect to the server. Please ensure the server is running.');
-        } else if (errorMessage.includes('Timeout')) {
-          setError('Server connection timed out. Please try again later.');
-        } else if (errorMessage.includes('CORS')) {
-          // CORS error, continue with login attempt
-        } else {
-          setError(`Server connection error: ${errorMessage}`);
-          setIsLoading(false);
-          return;
-        }
+        // Only show error if login fails, not here
       }
       
       // Proceed with registration/login with better error handling

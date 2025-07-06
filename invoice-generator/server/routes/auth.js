@@ -49,7 +49,8 @@ router.get('/google/callback', (req, res, next) => {
           httpOnly: true,
           secure: true,
           sameSite: 'none',
-          maxAge: 24 * 60 * 60 * 1000
+          maxAge: 24 * 60 * 60 * 1000,
+          domain: '.onrender.com'
         });
         return res.redirect(`${FRONTEND_URL}`);
       });
@@ -198,7 +199,8 @@ router.post('/register', async (req, res) => {
           httpOnly: true,
           secure: true,
           sameSite: 'none',
-          maxAge: 24 * 60 * 60 * 1000
+          maxAge: 24 * 60 * 60 * 1000,
+          domain: '.onrender.com'
         });
         res.json({ 
           user: {
@@ -268,7 +270,8 @@ router.post('/login', async (req, res) => {
           httpOnly: true,
           secure: true,
           sameSite: 'none',
-          maxAge: 24 * 60 * 60 * 1000
+          maxAge: 24 * 60 * 60 * 1000,
+          domain: '.onrender.com'
         });
         // Return user info with isAdmin flag and _id instead of id
         res.json({ 
