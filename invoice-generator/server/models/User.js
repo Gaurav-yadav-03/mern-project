@@ -22,6 +22,11 @@ mongoose.connection.once('connected', initializeSchema);
 
 // Add isAdmin field to your User schema if it doesn't exist
 const userSchema = new mongoose.Schema({
+  clerkId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
   email: {
     type: String,
     required: true,
@@ -31,11 +36,6 @@ const userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true
-  },
-  googleId: {
-    type: String,
-    sparse: true,
-    unique: true
   },
   picture: {
     type: String,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './Navbar.module.css';
 import { useAuth } from '../context/AuthContext';
+import { UserButton } from '@clerk/clerk-react';
 
 const Navbar = () => {
   const location = useLocation();
@@ -129,6 +130,7 @@ const Navbar = () => {
             Login/Signup
           </Link>
         )}
+        <UserButton afterSignOutUrl="/login" />
       </div>
     </nav>
   );
