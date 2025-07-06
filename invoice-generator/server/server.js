@@ -11,7 +11,6 @@ const MongoStore = require('connect-mongo');
 require('dotenv').config();
 const { generateInvoice } = require('./invoice');
 const Invoice = require('./models/Invoice');
-const cookieParser = require('cookie-parser');
 
 
 // Import routes
