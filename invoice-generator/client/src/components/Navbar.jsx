@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './Navbar.module.css';
-import { useAuth } from '../context/AuthContext';
-import { UserButton, useUser } from '@clerk/clerk-react';
+import { useUser, UserButton } from '@clerk/clerk-react';
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, user, loading, logout } = useAuth();
-  const { user: clerkUser, isSignedIn } = useUser();
+  const { isSignedIn, user } = useUser();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   
@@ -16,7 +14,7 @@ const Navbar = () => {
   const userPicture = user?.picture || 'default-avatar-url.png';
 
   // Check if user is admin
-  const isAdmin = user && user.isAdmin === true;
+  const isAdmin = user && (user.emailAddresses?.[0]?.emailAddress === 'admin@gmail.com' || user.publicMetadata?.role === 'admin');
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -29,7 +27,6 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       console.log('Logout button clicked');
-      await logout();
       // Close dropdown
       setShowProfileDropdown(false);
       // Redirect to home page
@@ -47,7 +44,7 @@ const Navbar = () => {
     setShowProfileDropdown(false);
   }, [location.pathname]);
 
-  if (loading) {
+  if (!user) {
     return <div className={styles.loading}>Loading...</div>;
   }
 
@@ -69,7 +66,7 @@ const Navbar = () => {
         </Link>
         
         {/* Show Create Invoice and Invoice History only for authenticated non-admin users */}
-        {isAuthenticated && !isAdmin && (
+        {isSignedIn && !isAdmin && (
           <>
             <Link to="/basic-details" className={`${styles.navLink} ${isActive('/basic-details') ? styles.active : ''}`}>
               Create Invoice
@@ -81,62 +78,24 @@ const Navbar = () => {
         )}
         
         {/* Show Admin Panel only for admin users */}
-        {isAuthenticated && isAdmin && (
-          <Link to="/admin" className={`${styles.navLink} ${isActive('/admin') ? styles.active : ''}`}>
+        {isSignedIn && isAdmin && (
+          <Link 
+            to="/admin" 
+            className={`${styles.navLink} ${location.pathname.startsWith('/admin') ? styles.active : ''}`}
+          >
             Admin Panel
           </Link>
         )}
         
-        {isAuthenticated ? (
+        {isSignedIn ? (
           <div className={styles.profileSection}>
-            <div 
-              className={styles.profileCircle} 
-              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-            >
-              {user.picture ? (
-                <img 
-                  src={userPicture}
-                  alt={user?.name || 'User'} 
-                  referrerPolicy="no-referrer"
-                  className={styles.userAvatar} 
-                />
-              ) : (
-                <span>{user.name?.[0]?.toUpperCase() || 'U'}</span>
-              )}
-            </div>
-            
-            {showProfileDropdown && (
-              <div className={styles.profileDropdown}>
-                <div className={styles.userInfo}>
-                  <span className={styles.userName}>{user.name}</span>
-                  <span className={styles.userEmail}>{user.email}</span>
-                  {isAdmin && <span className={styles.userRole}>Administrator</span>}
-                </div>
-                <div className={styles.dropdownDivider} />
-                <Link 
-                  to="/profile" 
-                  className={styles.dropdownItem}
-                  onClick={() => setShowProfileDropdown(false)}
-                >
-                  Edit Profile
-                </Link>
-                <button onClick={handleLogout} className={styles.dropdownItem}>
-                  Logout
-                </button>
-              </div>
-            )}
+            <UserButton afterSignOutUrl="/login" />
           </div>
         ) : (
           <Link to="/login" className={`${styles.navLink} ${isActive('/login') ? styles.active : ''}`}>
             Login/Signup
           </Link>
         )}
-        {isSignedIn && (
-          <span style={{ marginRight: 12, fontWeight: 500 }}>
-            {clerkUser?.fullName || clerkUser?.username || clerkUser?.emailAddress}
-          </span>
-        )}
-        <UserButton afterSignOutUrl="/login" />
       </div>
     </nav>
   );

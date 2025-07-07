@@ -14,8 +14,12 @@ import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 import './theme.css';
+import { useUser } from "@clerk/clerk-react";
 
 function App() {
+  const { user } = useUser();
+  const isAdmin = user?.publicMetadata?.role === "admin";
+
   return (
     <Router>
       <div className="App">

@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken');
+const { verifyToken } = require('@clerk/clerk-sdk-node');
 
-const authenticateToken = (req, res, next) => {
+const authenticateClerkToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -9,12 +9,12 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = verified;
+    const payload = await verifyToken(token);
+    req.user = payload;
     next();
   } catch (error) {
     res.status(403).json({ message: 'Invalid token' });
   }
 };
 
-module.exports = { authenticateToken };
+module.exports = { authenticateClerkToken };
