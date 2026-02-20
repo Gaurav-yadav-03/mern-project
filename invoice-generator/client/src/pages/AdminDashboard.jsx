@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 import styles from './AdminDashboard.module.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const AdminDashboard = () => {
+  const { isSignedIn, user } = useUser();
   const [activeTab, setActiveTab] = useState('employees');
   const [employees, setEmployees] = useState([]);
   const [invoices, setInvoices] = useState([]);
@@ -13,28 +15,13 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Check if user is admin
-    const checkAdmin = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/status`, {
-          credentials: 'include'
-        });
-        const data = await response.json();
-        
-        if (!data.isAuthenticated || !data.user.isAdmin) {
-          navigate('/');
-        } else {
-          // Fetch initial data
-          fetchData(activeTab);
-        }
-      } catch (error) {
-        console.error('Admin check failed:', error);
-        navigate('/');
-      }
-    };
-    
-    checkAdmin();
-  }, [navigate]);
+    if (!isSignedIn || user?.emailAddresses?.[0]?.emailAddress !== 'admin@gmail.com') {
+      navigate('/home');
+    } else if (!window.__admin_welcomed_dashboard) {
+      window.alert('Welcome, Admin. Here is your dashboard.');
+      window.__admin_welcomed_dashboard = true;
+    }
+  }, [isSignedIn, user, navigate]);
   
   useEffect(() => {
     if (activeTab) {

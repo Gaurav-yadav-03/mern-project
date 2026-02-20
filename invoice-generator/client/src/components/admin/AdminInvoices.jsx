@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './AdminComponents.module.css';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -12,6 +14,21 @@ const AdminInvoices = () => {
     status: '',
     remarks: ''
   });
+
+  const navigate = useNavigate();
+  const { isSignedIn, user } = useUser();
+
+  useEffect(() => {
+    if (isSignedIn && user?.emailAddresses?.[0]?.emailAddress === 'admin@gmail.com') {
+      if (!window.__admin_welcomed_invoices) {
+        window.alert('Welcome, Admin. Redirecting you to your invoices...');
+        window.__admin_welcomed_invoices = true;
+      }
+      navigate('/admin/invoices');
+    } else if (!isSignedIn || user?.emailAddresses?.[0]?.emailAddress !== 'admin@gmail.com') {
+      navigate('/home');
+    }
+  }, [isSignedIn, user, navigate]);
 
   useEffect(() => {
     const fetchInvoices = async () => {

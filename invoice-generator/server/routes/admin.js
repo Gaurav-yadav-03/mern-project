@@ -2,14 +2,13 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Invoice = require('../models/Invoice');
+const { authenticateClerkToken } = require('../middleware/auth');
 
 // Middleware to check if user is admin
 const isAdmin = (req, res, next) => {
-  console.log('Auth check:', req.isAuthenticated());
-  console.log('User:', req.user);
-  console.log('Is admin?', req.user?.isAdmin);
-  
-  if (req.isAuthenticated() && req.user && req.user.isAdmin) {
+  // For Clerk-authenticated users, check email
+  const userEmail = req.user?.email || req.user?.emailAddresses?.[0]?.emailAddress;
+  if (userEmail === 'admin@gmail.com') {
     console.log('Admin access granted');
     next();
   } else {
@@ -19,7 +18,7 @@ const isAdmin = (req, res, next) => {
 };
 
 // Get all employees
-router.get('/employees', isAdmin, async (req, res) => {
+router.get('/employees', authenticateClerkToken, isAdmin, async (req, res) => {
   try {
     const employees = await User.find({}, { password: 0 });
     res.json(employees);
@@ -30,7 +29,7 @@ router.get('/employees', isAdmin, async (req, res) => {
 });
 
 // Get all invoices
-router.get('/invoices', isAdmin, async (req, res) => {
+router.get('/invoices', authenticateClerkToken, isAdmin, async (req, res) => {
   try {
     const invoices = await Invoice.find().populate('userId', 'name email');
     res.json(invoices);
@@ -41,7 +40,7 @@ router.get('/invoices', isAdmin, async (req, res) => {
 });
 
 // Update invoice status
-router.put('/invoices/:id/status', isAdmin, async (req, res) => {
+router.put('/invoices/:id/status', authenticateClerkToken, isAdmin, async (req, res) => {
   try {
     const { status, remarks } = req.body;
     const invoice = await Invoice.findByIdAndUpdate(

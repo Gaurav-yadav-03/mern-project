@@ -27,33 +27,21 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Instant load from localStorage for fast Navbar
+    // Show cached user instantly
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        const normalizedUserData = normalizeUserData(userData);
-        setUser(normalizedUserData);
-        setIsAuthenticated(true);
-        setLoading(false); // Show Navbar instantly
-      } catch (e) {
-        localStorage.removeItem('user');
-        setUser(null);
-        setIsAuthenticated(false);
-        setLoading(false);
-      }
+      setUser(JSON.parse(storedUser));
+      setIsAuthenticated(true);
+      setLoading(false);
     }
     // Then check with server in background
     const checkAuth = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/auth/status`, {
-          withCredentials: true
-        });
+        const response = await axios.get(`${API_BASE_URL}/api/auth/status`, { withCredentials: true });
         if (response.data.isAuthenticated && response.data.user) {
-          const normalizedUserData = normalizeUserData(response.data.user);
-          setUser(normalizedUserData);
+          setUser(response.data.user);
           setIsAuthenticated(true);
-          localStorage.setItem('user', JSON.stringify(normalizedUserData));
+          localStorage.setItem('user', JSON.stringify(response.data.user));
         } else {
           setUser(null);
           setIsAuthenticated(false);

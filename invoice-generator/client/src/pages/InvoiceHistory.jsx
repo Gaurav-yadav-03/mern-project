@@ -6,11 +6,11 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Table from '../components/Table';
 import Modal from '../components/Modal';
-import { useAuth } from '../context/AuthContext';
+import { useUser } from "@clerk/clerk-react";
 
 const InvoiceHistory = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user, loading: authLoading } = useAuth();
+  const { isSignedIn, user } = useUser();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,21 +23,19 @@ const InvoiceHistory = () => {
   const API_BASE_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    // Only fetch invoices if the user is authenticated
-    if (isAuthenticated && !authLoading) {
+    if (isSignedIn) {
       fetchInvoices();
-    } else if (!authLoading && !isAuthenticated) {
-      // If not authenticated and not still loading auth status, redirect to login
+    } else if (isSignedIn === false) {
       navigate('/login');
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [isSignedIn, navigate]);
 
   const fetchInvoices = async () => {
     try {
       setLoading(true);
       
       // Add user ID to query params to fetch only user's invoices
-      const userId = user?._id;
+      const userId = user?.id;
       if (!userId) {
         setError('User information not available');
         setLoading(false);
@@ -243,7 +241,7 @@ const InvoiceHistory = () => {
   };
 
   // Skip if still loading authentication or user not authenticated
-  if (authLoading) {
+  if (loading) {
     return (
       <div className={styles.container}>
         <Card padding="large" shadow="medium">
@@ -256,7 +254,7 @@ const InvoiceHistory = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isSignedIn) {
     return null; // This will be redirected by the useEffect
   }
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import styles from './GenerateInvoice.module.css';
-import { useAuth } from '../context/AuthContext';
+import { useUser } from "@clerk/clerk-react";
 import toast, { Toaster } from 'react-hot-toast';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
@@ -12,7 +12,7 @@ const GenerateInvoice = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [invoiceData, setInvoiceData] = useState(null);
-  const { user } = useAuth();
+  const { isSignedIn, user } = useUser();
   const [validationErrors, setValidationErrors] = useState([]);
   const [success, setSuccess] = useState(false);
 

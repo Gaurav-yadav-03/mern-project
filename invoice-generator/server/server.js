@@ -11,6 +11,9 @@ const MongoStore = require('connect-mongo');
 require('dotenv').config();
 const { generateInvoice } = require('./invoice');
 const Invoice = require('./models/Invoice');
+const { ClerkExpressRequireAuth, ClerkExpressWithAuth, getAuth, users } = require('@clerk/clerk-sdk-node');
+const User = require('./models/User');
+
 
 // Import routes
 const uploadRoutes = require('./routes/upload');
@@ -74,9 +77,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true, // Always true for cross-site cookies in production
-    sameSite: 'none', // Required for cross-site cookies
+    secure: true,
+    sameSite: 'none',
     httpOnly: true,
+    domain: '.onrender.com',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   },
   store: MongoStore.create({
@@ -689,4 +693,29 @@ app.get('/debug-file-paths', (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Error checking paths', details: error.message });
   }
+});
+
+// Clerk authentication middleware
+const clerkAuth = ClerkExpressWithAuth({ secretKey: process.env.CLERK_SECRET_KEY });
+
+// Example protected route with MongoDB user sync
+app.use('/api/protected', clerkAuth, async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  // Fetch user info from Clerk
+  const clerkUser = await users.getUser(userId);
+
+  // Sync to MongoDB
+  let user = await User.findOne({ clerkId: userId });
+  if (!user) {
+    user = await User.create({
+      clerkId: userId,
+      email: clerkUser.emailAddresses[0].emailAddress,
+      name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim(),
+      picture: clerkUser.imageUrl
+    });
+  }
+
+  res.json({ message: 'Authenticated', user });
 });
